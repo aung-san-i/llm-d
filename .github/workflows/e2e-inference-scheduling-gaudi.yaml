@@ -1,12 +1,6 @@
 name: Gaudi Inference Scheduling Test
 
 on:
-  push:
-    paths:
-      - 'guides/inference-scheduling/ms-inference-scheduling/values-gaudi.yaml'
-      - 'guides/inference-scheduling/gaie-inference-scheduling/**'
-      - 'guides/inference-scheduling/helmfile.yaml.gotmpl'
-      - '.github/workflows/e2e-inference-scheduling-gaudi.yaml'
   pull_request:
     paths:
       - 'guides/inference-scheduling/ms-inference-scheduling/values-gaudi.yaml'
@@ -25,7 +19,6 @@ jobs:
   deploy_and_validate:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
       github.event_name == 'pull_request'
     runs-on: gaudi
     env:
