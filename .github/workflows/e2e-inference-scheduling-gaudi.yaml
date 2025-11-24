@@ -90,10 +90,25 @@ jobs:
       - name: Deploy guide
         run: |
           cd guides/inference-scheduling
+          echo "Starting helmfile deployment for gaudi environment..."
           RELEASE_NAME_POSTFIX=${RELEASE_NAME_POSTFIX} \
-          helmfile apply -e gaudi -n "${NAMESPACE}" \
+          helmfile apply -e gaudi -n "${NAMESPACE}" 2>&1 \
             | tee ~/inference-scheduling-gaudi-deployment.log
+          
+          # Check if helmfile command succeeded
+          HELMFILE_EXIT_CODE=${PIPESTATUS[0]}
+          if [ ${HELMFILE_EXIT_CODE} -ne 0 ]; then
+            echo "❌ Helmfile apply failed with exit code: ${HELMFILE_EXIT_CODE}"
+            echo "=== Full deployment log ==="
+            cat ~/inference-scheduling-gaudi-deployment.log
+            exit 1
+          fi
+          
           echo "---------------------------------------" >> ~/inference-scheduling-gaudi-deployment.log
+          
+          # Verify releases were created
+          echo "✅ Helmfile apply succeeded. Checking deployed releases..."
+          helm list -n "${NAMESPACE}"
 
       - name: fetch helm manifests - prepare for upload
         run: |
@@ -101,7 +116,7 @@ jobs:
             /bin/sh .github/scripts/e2e/helm-get-all.sh \
               ~/inference-scheduling-gaudi-deployment.log \
               "$release_name" \
-              "$NAMESPACE"
+              "$NAMESPACE" || echo "⚠️  Failed to fetch manifests for $release_name"
           done
 
       - name: Wait for all pods to be ready
