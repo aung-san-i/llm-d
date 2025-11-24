@@ -68,7 +68,7 @@ Intel Gaudi deployments require Dynamic Resource Allocation (DRA) support on Kub
 
 #### Prerequisites
 
-- Kubernetes cluster version 1.26+ with DRA feature gates enabled
+- Kubernetes cluster version 1.34+ with DRA feature gates enabled
 - Intel Gaudi hardware (Gaudi 1, Gaudi 2, or Gaudi 3)
 - Habana driver installed on host nodes
 
