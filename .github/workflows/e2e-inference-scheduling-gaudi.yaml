@@ -24,10 +24,9 @@ jobs:
     env:
       NAMESPACE: "llm-d-gaudi-is"
       GATEWAY_TYPE: "istio"
-      RELEASE_NAME_POSTFIX: "r1"
-      INFRA_RELEASE_NAME: "infra-r1"
-      GAIE_RELEASE_NAME: "gaie-r1"
-      MS_RELEASE_NAME: "ms-r1"
+      INFRA_RELEASE_NAME: "infra-inference-scheduling"
+      GAIE_RELEASE_NAME: "gaie-inference-scheduling"
+      MS_RELEASE_NAME: "ms-inference-scheduling"
 
     steps:
       - name: Checkout
@@ -91,7 +90,6 @@ jobs:
         run: |
           cd guides/inference-scheduling
           echo "Starting helmfile deployment for gaudi environment..."
-          RELEASE_NAME_POSTFIX=${RELEASE_NAME_POSTFIX} \
           helmfile apply -e gaudi -n "${NAMESPACE}" 2>&1 \
             | tee ~/inference-scheduling-gaudi-deployment.log
           
@@ -118,6 +116,11 @@ jobs:
               "$release_name" \
               "$NAMESPACE" || echo "⚠️  Failed to fetch manifests for $release_name"
           done
+
+      - name: Deploy HTTPRoute
+        run: |
+          cd guides/inference-scheduling
+          kubectl apply -f httproute.yaml -n "${NAMESPACE}"
 
       - name: Wait for all pods to be ready
         run: |
