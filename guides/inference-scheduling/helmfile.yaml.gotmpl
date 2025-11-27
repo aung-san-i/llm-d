@@ -19,7 +19,7 @@ environments:
           name: none
   xpu: &XPU
     <<: *I
-  gaudi: &GAUDI
+  hpu: &HPU
     <<: *I
   cpu: &CPU
     <<: *I
@@ -81,7 +81,7 @@ releases:
               enabled: false
     {{- end }}
     # Apply destination rule for anything istio
-    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "xpu") (eq .Environment.Name "gaudi") (eq .Environment.Name "cpu") }}
+    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "istioBench") (eq .Environment.Name "xpu") (eq .Environment.Name "hpu") (eq .Environment.Name "cpu") }}
       - provider:
           name: {{ .Environment.Values.provider.name }}
           istio:
@@ -109,8 +109,8 @@ releases:
       - ms-inference-scheduling/values_tpu.yaml
     {{- else if eq .Environment.Name "xpu" }}
       - ms-inference-scheduling/values_xpu.yaml
-    {{- else if eq .Environment.Name "gaudi" }}
-      - ms-inference-scheduling/values-gaudi.yaml
+    {{- else if eq .Environment.Name "hpu" }}
+      - ms-inference-scheduling/values-hpu.yaml
     {{- else if eq .Environment.Name "cpu" }}
       - ms-inference-scheduling/values_cpu.yaml
     {{- else if eq .Environment.Name "digitalocean" }}

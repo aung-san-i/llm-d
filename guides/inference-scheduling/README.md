@@ -111,12 +111,12 @@ helmfile apply -e standalone -n ${NAMESPACE}
 
 #### Hardware Backends
 
-Currently in the `inference-scheduling` example we suppport configurations for `xpu`, `tpu`, `gaudi`, `cpu`, and `cuda` GPUs. By default we use modelserver values supporting `cuda` GPUs, but to deploy on one of the other hardware backends you may use:
+Currently in the `inference-scheduling` example we suppport configurations for `xpu`, `tpu`, `cpu`, `hpu` (Intel Gaudi) and `cuda` GPUs. By default we use modelserver values supporting `cuda` GPUs, but to deploy on one of the other hardware backends you may use:
 
 ```bash
 helmfile apply -e xpu  -n ${NAMESPACE} # targets istio as gateway provider with XPU hardware
 # or
-helmfile apply -e gaudi  -n ${NAMESPACE} # targets istio as gateway provider with Gaudi HPU hardware
+helmfile apply -e hpu  -n ${NAMESPACE} # targets istio as gateway provider with Intel Gaudi (HPU) hardware
 # or
 helmfile apply -e gke_tpu  -n ${NAMESPACE} # targets GKE externally managed as gateway provider with TPU hardware
 # or
@@ -139,7 +139,7 @@ accelerator:
   dra: true
 ```
 
-**Note for Gaudi deployments:** Intel Gaudi requires Dynamic Resource Allocation (DRA) support. Ensure you have the [Intel Resource Drivers for Kubernetes](https://github.com/intel/intel-resource-drivers-for-kubernetes) installed on your cluster. See [Accelerator documentation](../../docs/accelerators/README.md#intel-gaudi-hpu) for setup details.
+**Note for Intel Gaudi (HPU) deployments:** Intel Gaudi requires Dynamic Resource Allocation (DRA) support. Ensure you have the [Intel Resource Drivers for Kubernetes](https://github.com/intel/intel-resource-drivers-for-kubernetes) installed on your cluster. See [Accelerator documentation](../../docs/accelerators/README.md#intel-gaudi-hpu) for setup details.
 
 ##### CPU Inferencing
 
