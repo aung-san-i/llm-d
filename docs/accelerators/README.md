@@ -10,7 +10,8 @@ Maintainers for each accelerator type are listed below. See our well-lit path gu
 | --- | --- | --- | --- |
 | AMD | ROCm | Kenny Roche (<Kenny.Roche@amd.com>) | Coming soon |
 | Google | [TPU](../infra-providers/gke/README.md#llm-d-on-google-kubernetes-engine-gke) | Edwin Hernandez (@Edwinhr716), Cong Liu (@liu-cong, <congliu.thu@gmail.com>) | [Inference Scheduling](../../guides/inference-scheduling/README.md), [Prefill/Decode Disaggregation](../../guides/pd-disaggregation/README.md) |
-| Intel | XPU, Gaudi (HPU) | Yuan Wu (@yuanwu2017, <yuan.wu@intel.com>) | [Inference Scheduling](../../guides/inference-scheduling/README.md), [Prefill/Decode Disaggregation](../../guides/pd-disaggregation/README.md) |
+| Intel | XPU | Yuan Wu (@yuanwu2017, <yuan.wu@intel.com>) | [Inference Scheduling](../../guides/inference-scheduling/README.md), [Prefill/Decode Disaggregation](../../guides/pd-disaggregation/README.md) |
+| Intel | HPU | Sakari Poussa (@poussa, <sakari.poussa@intel.com>) | [Inference Scheduling](../../guides/inference-scheduling/README.md) |
 | NVIDIA | GPU | Will Eaton (<weaton@redhat.com>), Greg (<grpereir@redhat.com>) | All |
 
 ## Requirements
