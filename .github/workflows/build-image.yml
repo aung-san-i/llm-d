@@ -1,3 +1,4 @@
+# yamllint disable rule:line-length rule:colons
 name: Dev LLM-D Image Build
 
 on:
@@ -179,9 +180,9 @@ jobs:
           target: builder
           push: false
           cache-from: |
-            type=gha,mode=max,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-cache:builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
           cache-to: |
-            type=gha,mode=max,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }},oci-mediatypes=true,compression=zstd
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-cache:builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }},mode=max,compression=zstd,compression-level=3
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             TARGETOS=${{ matrix.os }}
@@ -217,12 +218,11 @@ jobs:
             ${{ inputs.vllm_commit_sha != '' && format('VLLM_COMMIT_SHA={0}', inputs.vllm_commit_sha) || '' }}
             ${{ inputs.vllm_precompiled_wheel_commit != '' &&
               format('VLLM_PRECOMPILED_WHEEL_COMMIT={0}', inputs.vllm_precompiled_wheel_commit) || '' }}
-          cache-from: >-
-            type=gha,scope=cuda-dev-${{ matrix.os }}-${{
-            matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
-          cache-to: >-
-            type=gha,mode=max,scope=cuda-dev-${{ matrix.os }}-${{
-            matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-cache:runtime-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-cache:builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+          cache-to: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-cache:runtime-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }},mode=max,compression=zstd,compression-level=3
           labels: ${{ steps.meta.outputs.labels }}
           outputs: >-
             type=image,name=${{ env.REGISTRY }}/${{ github.repository }}-cuda-dev${{ matrix.image_suffix }},
