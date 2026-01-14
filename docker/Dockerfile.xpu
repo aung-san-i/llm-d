@@ -78,6 +78,9 @@ RUN python3 -m pip install -e tests/vllm_test_utils
 
 # install nixl from source code using a compatible version
 COPY docker/scripts/xpu/install_nixl_from_source_ubuntu.py /tmp/install_nixl_from_source_ubuntu.py
+# Pin NIXL_VERSION for reproducible builds and to ensure compatibility with the current
+# vLLM XPU runtime; the installer script can fetch the latest version if this is unset,
+# but we intentionally use a fixed, tested version here.
 ENV NIXL_VERSION=0.7.0
 RUN python3 /tmp/install_nixl_from_source_ubuntu.py
 
