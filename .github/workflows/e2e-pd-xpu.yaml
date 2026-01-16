@@ -104,7 +104,7 @@ jobs:
           if [ -n "${CUSTOM_TAG}" ]; then
             echo "Using custom image tag: ${CUSTOM_TAG}"
             echo "IMAGE_TAG=${CUSTOM_TAG}" >> $GITHUB_ENV
-            echo "HELM_SET_IMAGE=--set decode.containers[0].image=ghcr.io/${{ github.repository }}-xpu-dev:${CUSTOM_TAG} --set prefill.containers[0].image=ghcr.io/${{ github.repository }}-xpu-dev:${CUSTOM_TAG}" >> $GITHUB_ENV
+            echo "HELM_SET_IMAGE=--set decode.containers[0].image=ghcr.io/${{ github.repository }}-xpu-dev:${CUSTOM_TAG} --set decode.containers[0].imagePullPolicy=Always --set prefill.containers[0].image=ghcr.io/${{ github.repository }}-xpu-dev:${CUSTOM_TAG} --set prefill.containers[0].imagePullPolicy=Always" >> $GITHUB_ENV
           else
             echo "Using default image tag from values file"
             echo "HELM_SET_IMAGE=" >> $GITHUB_ENV
