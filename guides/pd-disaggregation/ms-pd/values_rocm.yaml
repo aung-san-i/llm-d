@@ -1,18 +1,16 @@
-# AMD ROCm configuration for PD Disaggregation
-# This configuration sets up prefill and decode services with AMD GPU optimization
+# ROCm configuration for PD Disaggregation
 # NOTE: hostNetwork is enabled for testing NIC exposure - not recommended for production
 
 multinode: false
 
-# Configure accelerator type for AMD
 accelerator:
   type: amd
 
 modelArtifacts:
-  uri: "hf://deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
-  size: 10Gi
+  uri: "hf://RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"
+  size: 100Gi
   authSecretName: "llm-d-hf-token"
-  name: "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+  name: "RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"
 
 routing:
   servicePort: 8000
@@ -22,9 +20,11 @@ routing:
     secure: false
 
 decode:
+  parallelism:
+    tensor: 4
+    data: 1
   create: true
   replicas: 1
-  # hostNetwork for testing - exposes host NICs to the pod
   extraConfig:
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
@@ -39,11 +39,12 @@ decode:
     image: quay.io/rh-ee-vsundarr/amd-vllm:latest
     modelCommand: vllmServe
     args:
+      - "--tensor-parallel-size"
+      - "4"
       - "--block-size"
       - "128"
       - "--kv-transfer-config"
       - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
-      - "--disable-log-requests"
       - "--disable-uvicorn-access-log"
       - "--max-model-len"
       - "32000"
@@ -52,8 +53,6 @@ decode:
         valueFrom:
           fieldRef:
             fieldPath: status.podIP
-      - name: VLLM_NIXL_SIDE_CHANNEL_PORT
-        value: "5557"
       - name: VLLM_LOGGING_LEVEL
         value: DEBUG
     ports:
@@ -64,25 +63,54 @@ decode:
       limits:
         memory: 64Gi
         cpu: "16"
-        amd.com/gpu: "1"
+        amd.com/gpu: "4"
       requests:
         memory: 64Gi
         cpu: "16"
-        amd.com/gpu: "1"
+        amd.com/gpu: "4"
     mountModelVolume: true
     volumeMounts:
-      - name: dshm
-        mountPath: /dev/shm
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: 8200
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8200
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: 8200
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
   volumes:
-    - name: dshm
-      emptyDir:
-        medium: Memory
-        sizeLimit: 16Gi
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "16Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
 
 prefill:
   create: true
-  replicas: 3
-  # hostNetwork for testing - exposes host NICs to the pod
+  replicas: 4
   extraConfig:
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
@@ -101,7 +129,6 @@ prefill:
       - "128"
       - "--kv-transfer-config"
       - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
-      - "--disable-log-requests"
       - "--disable-uvicorn-access-log"
       - "--max-model-len"
       - "32000"
@@ -110,8 +137,6 @@ prefill:
         valueFrom:
           fieldRef:
             fieldPath: status.podIP
-      - name: VLLM_NIXL_SIDE_CHANNEL_PORT
-        value: "5557"
       - name: VLLM_LOGGING_LEVEL
         value: DEBUG
     ports:
@@ -129,10 +154,40 @@ prefill:
         amd.com/gpu: "1"
     mountModelVolume: true
     volumeMounts:
-      - name: dshm
-        mountPath: /dev/shm
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: 8000
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
   volumes:
-    - name: dshm
-      emptyDir:
-        medium: Memory
-        sizeLimit: 16Gi
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "16Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
