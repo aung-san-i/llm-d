@@ -18,9 +18,9 @@ RUN apt-get install -y ca-certificates && update-ca-certificates && \
 WORKDIR /workspace
 RUN --mount=type=cache,target=/var/cache/git \
     git clone https://github.com/vllm-project/vllm.git && \
-    cd vllm && \
-    git checkout c5f10cc139ec87e217f2bb56a677dd57394729f5
-
+        cd vllm && \
+        git fetch origin pull/32365/head:pr-32365 && \
+        git checkout pr-32365
 
 WORKDIR /workspace/vllm
 
