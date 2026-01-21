@@ -4,8 +4,8 @@ FROM ubuntu:22.04 AS base-common
 ARG PYTHON_VERSION=3.12
 ARG PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu/"
 ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
-# Pin to a commit SHA1
-ARG VLLM_COMMIT=c5f10cc139ec87e217f2bb56a677dd57394729f5
+# Pin to a commit SHA1/Tag
+ARG VLLM_COMMIT=v0.14.0
 ARG TARGETARCH
 # Support for building with non-AVX512 vLLM
 ARG VLLM_CPU_DISABLE_AVX512=0
