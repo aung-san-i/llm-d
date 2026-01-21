@@ -120,11 +120,11 @@ prefill:
       limits:
         memory: 64Gi
         cpu: "8"
-        # note: XPU resources get controlled by parallelism + accelerators above
+        # note: XPU resources get controlled by parallelism + dra above
       requests:
         memory: 64Gi
         cpu: "8"
-        # note: XPU resources get controlled by parallelism + accelerators above
+        # note: XPU resources get controlled by parallelism + dra above
     mountModelVolume: true
     volumeMounts:
       - name: dshm
