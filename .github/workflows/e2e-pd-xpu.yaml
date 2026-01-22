@@ -211,10 +211,6 @@ jobs:
           kubectl get destinationrule -n "${NAMESPACE}" || true
           echo ""
 
-      - name: Sleep to wait for vLLM to be ready to respond to requests
-        if: steps.wait_pods.outcome == 'success'
-        run: sleep 360
-
       - name: Verify installation and run inference tests
         if: steps.wait_pods.outcome == 'success'
         run: |
