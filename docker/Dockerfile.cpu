@@ -80,7 +80,10 @@ ENV LD_PRELOAD="/usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4"
 ###############################################################
 FROM base-${TARGETARCH} AS vllm-build
 
-ARG max_jobs=32
+# Reduce parallel job from 32(vllm prev-0.13.0 pytorch2.8) to 6 due to vllm v0.14.0(pytorch2.9+)
+# resource requirements
+# Lower value to prevent runner OOM/timeout during wheel build
+ARG max_jobs=6
 
 WORKDIR /workspace/vllm
 
@@ -88,6 +91,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
    uv pip install -r requirements/cpu-build.txt
 
 RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=cache,target=/root/.cache/ccache \
+    --mount=type=cache,target=/workspace/vllm/.deps,sharing=locked \
     MAX_JOBS=${max_jobs} VLLM_TARGET_DEVICE=cpu \
     python3 setup.py bdist_wheel --dist-dir=dist --py-limited-api=cp38
 
