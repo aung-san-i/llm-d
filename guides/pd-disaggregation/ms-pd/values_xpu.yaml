@@ -45,10 +45,6 @@ decode:
       - "--disable-uvicorn-access-log"
       - "--max-model-len"
       - "32000"
-    securityContext:
-      fsGroup: 107
-      supplementalGroups:
-        - 107
     env:
       - name: UCX_TLS
         value: "tcp"
@@ -70,13 +66,43 @@ decode:
         # note: XPU resources get controlled by parallelism + accelerators above
     mountModelVolume: true
     volumeMounts:
-      - name: dshm
-        mountPath: /dev/shm
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: vllm
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: vllm
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: vllm
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
   volumes:
-    - name: dshm
-      emptyDir:
-        medium: Memory
-        sizeLimit: 4Gi
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "16Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
 
 prefill:
   parallelism:
@@ -98,14 +124,9 @@ prefill:
       - "64"
       - "--kv-transfer-config"
       - '{"kv_connector":"NixlConnector", "kv_role":"kv_both", "kv_buffer_device":"cpu"}'
-      - "--disable-log-requests"
       - "--disable-uvicorn-access-log"
       - "--max-model-len"
       - "32000"
-    securityContext:
-      fsGroup: 107
-      supplementalGroups:
-        - 107
     env:
       - name: UCX_TLS
         value: "tcp"
@@ -127,10 +148,40 @@ prefill:
         # note: XPU resources get controlled by parallelism + dra above
     mountModelVolume: true
     volumeMounts:
-      - name: dshm
-        mountPath: /dev/shm
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: vllm
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: vllm
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: vllm
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
   volumes:
-    - name: dshm
-      emptyDir:
-        medium: Memory
-        sizeLimit: 4Gi
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "16Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
