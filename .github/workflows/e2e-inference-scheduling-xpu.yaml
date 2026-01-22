@@ -158,7 +158,6 @@ jobs:
             -n "${NAMESPACE}" \
             --timeout=10m; then
             echo "✅ All pods are ready."
-            sleep 180 # TODO: remove this once examples have readiness probes
             kubectl get pods -n "${NAMESPACE}"
           else
             echo "❌ Pods failed to become ready within timeout"

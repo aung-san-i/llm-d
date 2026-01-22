@@ -211,6 +211,15 @@ jobs:
           kubectl get destinationrule -n "${NAMESPACE}" || true
           echo ""
 
+      - name: Wait for NIXL KV connector to establish connections
+        if: steps.wait_pods.outcome == 'success'
+        run: |
+          echo "Waiting for NIXL KV connector to discover remote engines..."
+          # Readiness probes only check vLLM's /v1/models endpoint,
+          # but PD disaggregation requires additional time for NIXL
+          # to establish connections between prefill and decode pods
+          sleep 120
+
       - name: Verify installation and run inference tests
         if: steps.wait_pods.outcome == 'success'
         run: |
