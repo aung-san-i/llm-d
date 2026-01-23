@@ -88,11 +88,9 @@ To remove the created dependencies:
 
 You may specify any valid git source control reference for versions as `GATEWAY_API_CRD_REVISION` and `GATEWAY_API_INFERENCE_EXTENSION_CRD_REVISION`:
 
-```bash
     export GATEWAY_API_CRD_REVISION="v1.4.0"
     export GATEWAY_API_INFERENCE_EXTENSION_CRD_REVISION="v1.3.0"
     ./install-gateway-provider-dependencies.sh
-```
 
 ##### Installation
 
