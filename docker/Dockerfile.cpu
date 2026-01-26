@@ -26,8 +26,7 @@ COPY docker/scripts/common/package-utils.sh /tmp/package-utils.sh
 COPY docker/packages /tmp/packages
 COPY docker/scripts/common/builder/install-builder-packages.sh /tmp/install-builder-packages.sh
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} /tmp/install-builder-packages.sh && \
+    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} PYTHON_VERSION=${PYTHON_VERSION} /tmp/install-builder-packages.sh && \
     rm -f /tmp/install-builder-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
 
@@ -117,8 +116,9 @@ FROM vllm-build
 
 ARG TARGETOS=ubuntu
 ARG ACCELERATOR=cpu
-# These env variables are set to satisfy lint on dockerfile
+# To set python version is for making install-builder-pakcages.sh work
 ARG PYTHON_VERSION=3.12
+# These env variables are set to satisfy lint on dockerfile
 ARG CUDA_MAJOR
 ARG CUDA_MINOR
 ARG TARGETPLATFORM
@@ -139,7 +139,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY docker/scripts/common/package-utils.sh /tmp/package-utils.sh
 COPY docker/packages /tmp/packages
 COPY docker/scripts/common/runtime/install-runtime-packages.sh /tmp/install-runtime-packages.sh
-RUN TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} /tmp/install-runtime-packages.sh && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} /tmp/install-runtime-packages.sh && \
     rm -f /tmp/install-runtime-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
 

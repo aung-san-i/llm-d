@@ -1,9 +1,5 @@
 {
   "rhel_to_ubuntu": {
-    "python${PYTHON_VERSION}": null,
-    "python${PYTHON_VERSION}-pip": null,
-    "python${PYTHON_VERSION}-wheel": null,
-    "python${PYTHON_VERSION}-devel": null,
     "git": "git",
     "curl": "curl",
     "wget": "wget"

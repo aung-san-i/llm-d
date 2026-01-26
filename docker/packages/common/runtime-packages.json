@@ -1,8 +1,5 @@
 {
   "rhel_to_ubuntu": {
-    "python${PYTHON_VERSION}": "python${PYTHON_VERSION}",
-    "python${PYTHON_VERSION}-pip": "python${PYTHON_VERSION}-venv",
-    "python${PYTHON_VERSION}-devel": "python${PYTHON_VERSION}-dev",
     "procps-ng": "procps",
     "git": "git",
     "curl": "curl"

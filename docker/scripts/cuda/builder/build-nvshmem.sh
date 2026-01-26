@@ -55,11 +55,13 @@ if [ "$TARGETOS" = "rhel" ]; then
     )
 fi
 
+# Use Python from venv to ensure NVSHMEM builds for PYTHON_VERSION
 cmake \
     -G Ninja \
     -DNVSHMEM_PREFIX="${NVSHMEM_DIR}" \
     -DCMAKE_CUDA_ARCHITECTURES="${NVSHMEM_CUDA_ARCHITECTURES}" \
     -DCMAKE_CUDA_COMPILER="${CUDA_HOME}/bin/nvcc" \
+    -DPython3_EXECUTABLE="${VIRTUAL_ENV}/bin/python3" \
     -DNVSHMEM_PMIX_SUPPORT=0 \
     -DNVSHMEM_IBRC_SUPPORT=1 \
     -DNVSHMEM_IBGDA_SUPPORT=1 \
@@ -73,7 +75,7 @@ cmake \
     -DNVSHMEM_USE_NCCL=0 \
     -DNVSHMEM_BUILD_TESTS=0 \
     -DNVSHMEM_BUILD_EXAMPLES=0 \
-    ${EFA_FLAGS[@]} \
+    "${EFA_FLAGS[@]}" \
     ..
 
 ninja -j"$(nproc)"

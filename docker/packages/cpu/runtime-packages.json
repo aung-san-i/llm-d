@@ -2,7 +2,6 @@
   "rhel_to_ubuntu": {
   },
   "ubuntu_only": [
-    "ca-certificates",
     "libtcmalloc-minimal4",
     "ffmpeg",
     "libsm6",

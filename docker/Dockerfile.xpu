@@ -24,17 +24,23 @@ RUN wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRO
     echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list && \
     add-apt-repository -y ppa:kobuk-team/intel-graphics
 
-# Install base packages using manifest system
+# Install Python 3.12 and configure alternatives before installing other packages (e.g pip)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3.12 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install base packages using manifest system (venv pip devel etc)
 COPY docker/scripts/common/package-utils.sh /tmp/package-utils.sh
 COPY docker/packages /tmp/packages
 COPY docker/scripts/common/builder/install-builder-packages.sh /tmp/install-builder-packages.sh
-RUN TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} PYTHON_VERSION=${PYTHON_VERSION} /tmp/install-builder-packages.sh && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} PYTHON_VERSION=${PYTHON_VERSION} /tmp/install-builder-packages.sh && \
     rm -f /tmp/install-builder-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
-
-# Configure Python alternatives
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
 
 # This oneccl contains the BMG support which is not the case for default version of oneapi 2025.2.
 RUN wget https://github.com/uxlfoundation/oneCCL/releases/download/2021.15.6/intel-oneccl-2021.15.6.9_offline.sh

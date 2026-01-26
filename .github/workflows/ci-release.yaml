@@ -257,6 +257,9 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}-cpu:${{ env.TAG }}
             ${{ env.REGISTRY }}/${{ github.repository }}-cpu:latest
+          build-args: |
+            TARGETOS=ubuntu
+            ACCELERATOR=cpu
           github-token: ${{ secrets.GHCR_TOKEN }}
         env:
           DOCKER_BUILDKIT: "1"
@@ -327,6 +330,9 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}-xpu:${{ env.TAG }}
             ${{ env.REGISTRY }}/${{ github.repository }}-xpu:latest
+          build-args: |
+            TARGETOS=ubuntu
+            ACCELERATOR=xpu
           github-token: ${{ secrets.GHCR_TOKEN }}
         env:
           DOCKER_BUILDKIT: "1"

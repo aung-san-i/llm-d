@@ -41,7 +41,11 @@ fi
 if [ "$TARGETOS" = "ubuntu" ]; then
     setup_ubuntu_repos
     mapfile -t INSTALL_PKGS < <(load_layered_packages ubuntu "builder-packages.json" "${ACCELERATOR}")
-    install_packages ubuntu "${INSTALL_PKGS[@]}"
+    if [ "${#INSTALL_PKGS[@]}" -eq 0 ]; then
+        echo "WARNING: No packages loaded for accelerator=${ACCELERATOR}" >&2
+    else
+        install_packages ubuntu "${INSTALL_PKGS[@]}"
+    fi
     cleanup_packages ubuntu
 elif [ "$TARGETOS" = "rhel" ]; then
     setup_rhel_repos "$DOWNLOAD_ARCH"
