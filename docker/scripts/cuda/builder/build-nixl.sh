@@ -26,13 +26,17 @@ cd /tmp
 
 # Meson 1.3.0+ reads CMAKE_*_COMPILER_LAUNCHER env vars directly.
 # Ensure they're unset if sccache isn't ready.
+echo "DEBUG: All sccache/compiler related env vars:"
+env | grep -iE 'sccache|^CC=|^CXX=|CMAKE.*COMPILER|^CPP=' || true
 echo "DEBUG: SCCACHE_READY=${SCCACHE_READY:-unset}"
-echo "DEBUG: CC=${CC:-unset}"
-echo "DEBUG: CXX=${CXX:-unset}"
-echo "DEBUG: CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER:-unset}"
+echo "DEBUG: Contents of /usr/local/bin related to compilers:"
+ls -la /usr/local/bin/ | grep -E 'gcc|g\+\+|c\+\+|cc|sccache' || true
+echo "DEBUG: which c++:"
+which c++ || true
 if [ "${SCCACHE_READY:-false}" != "true" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER CC CXX
-    echo "DEBUG: after unset CXX=${CXX:-unset}"
+    unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER CC CXX CPP
+    echo "DEBUG: after unset, env:"
+    env | grep -iE 'sccache|^CC=|^CXX=|CMAKE.*COMPILER|^CPP=' || true
 else
     export CC="sccache gcc" CXX="sccache g++" NVCC="sccache nvcc"
 fi
