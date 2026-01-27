@@ -48,7 +48,6 @@ RUN bash intel-oneccl-2021.15.6.9_offline.sh -a --silent --eula accept && \
     echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc && \
     echo "source /opt/intel/oneapi/ccl/2021.15/env/vars.sh --force" >> /root/.bashrc
 
-SHELL ["/bin/bash", "-c"]
 CMD ["/bin/bash", "-c", "source /root/.bashrc && exec /bin/bash"]
 
 # Clone vLLM and build for XPU
@@ -60,7 +59,6 @@ RUN --mount=type=cache,target=/var/cache/git \
     git clone ${VLLM_REPO} vllm && \
     cd vllm && \
     git checkout ${VLLM_COMMIT_SHA}
-
 
 WORKDIR /workspace/vllm
 

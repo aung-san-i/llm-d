@@ -52,11 +52,15 @@ get_download_arch() {
 }
 
 # expand environment variables in json string
+# special handling because some build does not require CUDA version to be set(e.g cpu, xpu)
 expand_vars() {
     local json="$1"
-    echo "$json" | sed "s/\${PYTHON_VERSION}/${PYTHON_VERSION}/g; \
-                        s/\${CUDA_MAJOR}/${CUDA_MAJOR}/g; \
-                        s/\${CUDA_MINOR}/${CUDA_MINOR}/g"
+    local python_ver="${PYTHON_VERSION:-}"
+    local cuda_maj="${CUDA_MAJOR:-}"
+    local cuda_min="${CUDA_MINOR:-}"
+    echo "$json" | sed "s/\${PYTHON_VERSION}/${python_ver}/g; \
+                        s/\${CUDA_MAJOR}/${cuda_maj}/g; \
+                        s/\${CUDA_MINOR}/${cuda_min}/g"
 }
 
 # find package mappings file (script dir or /tmp)

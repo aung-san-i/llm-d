@@ -117,7 +117,7 @@ COPY docker/packages /tmp/packages
 COPY docker/scripts/common/builder/install-builder-packages.sh /tmp/install-builder-packages.sh
 RUN --mount=type=secret,id=subman_org \
     --mount=type=secret,id=subman_activation_key \
-    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} /tmp/install-builder-packages.sh && \
+    TARGETOS=${TARGETOS} ACCELERATOR=${ACCELERATOR} PYTHON_VERSION=${PYTHON_VERSION} /tmp/install-builder-packages.sh && \
     rm -f /tmp/install-builder-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
 
