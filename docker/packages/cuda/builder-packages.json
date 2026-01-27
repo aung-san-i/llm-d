@@ -29,6 +29,7 @@
     "pciutils": "pciutils",
     "pciutils-libs": null,
     "libaio-devel": "libaio-dev",
+    "python3.9-devel": null,
     "python${PYTHON_VERSION}": null,
     "python${PYTHON_VERSION}-devel": null
   },
