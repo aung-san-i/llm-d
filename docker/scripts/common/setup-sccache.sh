@@ -36,6 +36,7 @@ if [ "${USE_SCCACHE}" = "true" ]; then
     if ! /usr/local/bin/sccache --start-server; then
         echo "Warning: sccache failed to start, continuing without cache" >&2
         unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER
+        export SCCACHE_READY=false
         # Return 0 since we handled the failure gracefully; returning 1 would cause
         # parent scripts with 'set -e' to exit even though the build can continue without cache
         return 0
@@ -45,10 +46,12 @@ if [ "${USE_SCCACHE}" = "true" ]; then
         echo "Warning: sccache not responding properly, disabling cache" >&2
         /usr/local/bin/sccache --stop-server 2>/dev/null || true
         unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER
+        export SCCACHE_READY=false
         # Return 0 since we handled the failure gracefully; returning 1 would cause
         # parent scripts with 'set -e' to exit even though the build can continue without cache
         return 0
     fi
 
+    export SCCACHE_READY=true
     echo "sccache successfully configured with cache prefix: ${SCCACHE_S3_KEY_PREFIX}"
 fi
