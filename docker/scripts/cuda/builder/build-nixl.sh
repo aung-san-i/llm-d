@@ -37,12 +37,24 @@ if [ "${SCCACHE_READY:-false}" != "true" ]; then
     unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER CC CXX CPP
     echo "DEBUG: after unset, env:"
     env | grep -iE 'sccache|^CC=|^CXX=|CMAKE.*COMPILER|^CPP=' || true
+    echo "DEBUG: checking meson config locations:"
+    cat ~/.config/meson/native* 2>/dev/null || echo "no ~/.config/meson/native files"
+    cat /etc/meson/* 2>/dev/null || echo "no /etc/meson files"
+    ls -la ~/.local/share/meson/ 2>/dev/null || echo "no ~/.local/share/meson"
+    echo "DEBUG: checking venv for configs:"
+    find "${VIRTUAL_ENV}" -name "*.cfg" -o -name "meson*" 2>/dev/null | head -20 || true
+    echo "DEBUG: pip config:"
+    pip config list 2>/dev/null || true
 else
     export CC="sccache gcc" CXX="sccache g++" NVCC="sccache nvcc"
 fi
 
+echo "DEBUG: checking if nixl exists in cache:"
+ls -la /tmp/nixl 2>/dev/null && rm -rf /tmp/nixl || echo "no cached nixl"
 git clone "${NIXL_REPO}" nixl && cd nixl
 git checkout -q "${NIXL_VERSION}"
+echo "DEBUG: checking nixl for meson native files:"
+find . -name "*.ini" -o -name "native*" -o -name "cross*" 2>/dev/null | head -10 || true
 
 # Ubuntu image needs to be built against Ubuntu 20.04 and EFA only supports 22.04 and 24.04.
 EFA_FLAG=""
@@ -55,7 +67,11 @@ meson setup build \
     -Dbuildtype=release \
     -Ducx_path="${UCX_PREFIX}" \
     ${EFA_FLAG:+"$EFA_FLAG"} \
-    -Dinstall_headers=true
+    -Dinstall_headers=true || {
+        echo "=== MESON FAILED - dumping log ==="
+        cat /tmp/nixl/build/meson-logs/meson-log.txt 2>/dev/null || echo "no log found"
+        exit 1
+    }
 
 cd build
 ninja
