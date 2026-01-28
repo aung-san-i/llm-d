@@ -22,7 +22,7 @@ cd /tmp
 git clone "${UCX_REPO}" ucx && cd ucx
 git checkout -q "${UCX_VERSION}" 
 
-if [ "${SCCACHE_READY:-false}" = "true" ]; then
+if [ "${USE_SCCACHE}" = "true" ]; then
     export CC="sccache gcc" CXX="sccache g++"
 fi
 
@@ -53,7 +53,7 @@ ldconfig
 
 cd /tmp && rm -rf /tmp/ucx 
 
-if [ "${SCCACHE_READY:-false}" = "true" ]; then
+if [ "${USE_SCCACHE}" = "true" ]; then
     echo "=== UCX build complete - sccache stats ==="
     sccache --show-stats
 fi
