@@ -31,9 +31,10 @@ rm -rf infinistore
 
 git clone "${LMCACHE_REPO}" lmcache && cd lmcache
 git checkout -q "${LMCACHE_VERSION}"
+
 unset NINJA_STATUS # debug
 unset TORCH_LOGS  # debug
-uv build -v --wheel --no-build-isolation --out-dir /wheels  && \
+uv build -v --wheel --no-build-isolation --out-dir /wheels
 cd ..
 rm -rf lmcache
 
