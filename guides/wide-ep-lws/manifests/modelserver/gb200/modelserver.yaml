@@ -1,0 +1,128 @@
+apiVersion: leaderworkerset.x-k8s.io/v1
+kind: LeaderWorkerSet
+metadata:
+  name: wide-ep-gb200
+  labels:
+    llm-d.ai/inferenceServing: "true"
+    llm-d.ai/model: DeepSeek-V3
+    llm-d.ai/role: unified
+spec:
+  replicas: 1
+  leaderWorkerTemplate:
+    size: 1  # Single pod for debugging - increase for multi-node
+    workerTemplate:
+      metadata:
+        labels:
+          llm-d.ai/inferenceServing: "true"
+          llm-d.ai/model: DeepSeek-V3
+          llm-d.ai/role: unified
+      spec:
+        serviceAccountName: wide-ep-gb200
+        imagePullSecrets:
+        - name: rh-ee-ecrncevi-ecrncevi-vllm-pull-pull-secret
+        volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 2Gi
+          - name: shared-cuda
+            emptyDir: {}
+        resourceClaims:
+          - name: compute-domain-channel
+            resourceClaimTemplateName: llm-d-dev-claim
+        containers:
+          - name: vllm
+            image: quay.io/rh-ee-ecrncevi/llm-d-dev@sha256:032980d0a779f6e32f9606becf66841a0e46501aaf155b5678ff73c17c381992
+            securityContext:
+              capabilities:
+                add:
+                  - IPC_LOCK
+                  - SYS_RAWIO
+              runAsGroup: 0
+              runAsUser: 0
+            imagePullPolicy: Always
+            command:
+              - /bin/bash
+              - -c
+            args:
+              - |-
+                #################
+                # Simplified vLLM server - no P/D, no NIXL
+                #################
+                START_RANK=$(( ${LWS_WORKER_INDEX:-0} * DP_SIZE_LOCAL ))
+                source /opt/vllm/bin/activate
+                exec vllm serve \
+                  deepseek-ai/DeepSeek-V3 \
+                  --port 8000 \
+                  --disable-uvicorn-access-log \
+                  --enable-expert-parallel \
+                  --data-parallel-hybrid-lb \
+                  --data-parallel-size $((LWS_GROUP_SIZE * DP_SIZE_LOCAL)) \
+                  --data-parallel-size-local $DP_SIZE_LOCAL \
+                  --data-parallel-address ${LWS_LEADER_ADDRESS} \
+                  --data-parallel-rpc-port 5555 \
+                  --data-parallel-start-rank $START_RANK \
+                  --trust-remote-code
+            env:
+              # Data parallelism - GPUs per pod
+              - name: DP_SIZE_LOCAL
+                value: "4"
+
+              # MNNVL-specific settings for GB200 NVL72
+              - name: VLLM_DEEPEP_LOW_LATENCY_ALLOW_NVLINK
+                value: "1"
+              - name: VLLM_DEEPEP_LOW_LATENCY_USE_MNNVL
+                value: "1"
+              - name: VLLM_FUSED_MOE_CHUNK_SIZE
+                value: "1024"
+
+              # All2All backend - use high_throughput for unified serving
+              # (low_latency is decode-optimized but can be flaky on new hardware)
+              - name: VLLM_ALL2ALL_BACKEND
+                value: deepep_high_throughput
+              - name: VLLM_DEEPEP_HIGH_THROUGHPUT_FORCE_INTRA_NODE
+                value: "1"
+
+              # Common vLLM settings
+              - name: TRITON_LIBCUDA_PATH
+                value: /usr/lib64
+              - name: VLLM_RANDOMIZE_DP_DUMMY_INPUTS
+                value: "1"
+              - name: VLLM_USE_DEEP_GEMM
+                value: "1"
+              - name: NVIDIA_GDRCOPY
+                value: enabled
+
+              # Debug logging
+              - name: VLLM_LOGGING_LEVEL
+                value: INFO
+              - name: NCCL_DEBUG
+                value: INFO
+              - name: NVSHMEM_DEBUG
+                value: INFO
+            ports:
+              - containerPort: 8000
+                name: http
+                protocol: TCP
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 8000
+              initialDelaySeconds: 60
+              periodSeconds: 10
+            resources:
+              limits:
+                ephemeral-storage: 64Gi
+                memory: 512Gi
+                nvidia.com/gpu: "4"
+              requests:
+                cpu: 32
+                ephemeral-storage: 64Gi
+                memory: 512Gi
+                nvidia.com/gpu: "4"
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              - name: shared-cuda
+                mountPath: /usr/local/cuda
+            workingDir: /code
