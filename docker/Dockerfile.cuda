@@ -142,8 +142,8 @@ WORKDIR /workspace
 # Define commit SHAs as build args to avoid layer invalidation
 ARG LMCACHE_REPO=https://github.com/LMCache/LMCache.git
 ARG LMCACHE_COMMIT_SHA
-ARG VLLM_REPO="https://github.com/neuralmagic/vllm.git"
-ARG VLLM_COMMIT_SHA="llm-d-release-0.4"
+ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
+ARG VLLM_COMMIT_SHA="72506c98349d6bcd32b4e33eec7b5513453c1502"
 
 # Build LMCache wheel (skip on ARM64 - infinistore dependency has no ARM wheels)
 # hadolint ignore=DL3003,SC1091
@@ -288,8 +288,8 @@ RUN mkdir -p /opt/vllm-source && \
 
 # Define commit SHAs as build args to avoid layer invalidation
 ARG LMCACHE_COMMIT_SHA
-ARG VLLM_REPO="https://github.com/neuralmagic/vllm.git"
-ARG VLLM_COMMIT_SHA="llm-d-release-0.4"
+ARG VLLM_REPO="https://vllm-project/vllm.git"
+ARG VLLM_COMMIT_SHA="72506c98349d6bcd32b4e33eec7b5513453c1502"
 
 # vllm commit to use for precompiled wheel lookup (defaults to VLLM_COMMIT_SHA)
 # useful for testing feature branches with python-only changes against merge-base binaries
@@ -298,7 +298,7 @@ ARG VLLM_PRECOMPILED_WHEEL_COMMIT="75648b16ddce1bff02c39c6f06be62a58385ff52"
 # Dictates if we should pull a production wheel for the vllm commit sha
 ARG VLLM_PREBUILT=0
 # Dictates if we should pull precompiled binaries when installing vllm editably. These commits must be on main in vLLM.
-ARG VLLM_USE_PRECOMPILED=1
+ARG VLLM_USE_PRECOMPILED=0
 
 COPY scripts/warn-vllm-precompiled.sh /opt/
 
