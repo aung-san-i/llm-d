@@ -9,7 +9,7 @@ metadata:
 spec:
   replicas: 1
   leaderWorkerTemplate:
-    size: 1  # Single pod for debugging - increase for multi-node
+    size: 2
     workerTemplate:
       metadata:
         labels:
@@ -18,21 +18,17 @@ spec:
           llm-d.ai/role: unified
       spec:
         serviceAccountName: wide-ep-gb200
-        imagePullSecrets:
-        - name: rh-ee-ecrncevi-ecrncevi-vllm-pull-pull-secret
         volumes:
           - name: dshm
             emptyDir:
               medium: Memory
               sizeLimit: 2Gi
-          - name: shared-cuda
-            emptyDir: {}
         resourceClaims:
           - name: compute-domain-channel
             resourceClaimTemplateName: llm-d-dev-claim
         containers:
           - name: vllm
-            image: quay.io/rh-ee-ecrncevi/llm-d-dev@sha256:032980d0a779f6e32f9606becf66841a0e46501aaf155b5678ff73c17c381992
+            image: quay.io/tms/llm-d-cuda-dev:v0.5.0-arm64
             securityContext:
               capabilities:
                 add:
@@ -49,11 +45,14 @@ spec:
                 #################
                 # Simplified vLLM server - no P/D, no NIXL
                 #################
+                uv pip uninstall pplx-kernels
+
                 START_RANK=$(( ${LWS_WORKER_INDEX:-0} * DP_SIZE_LOCAL ))
                 source /opt/vllm/bin/activate
                 exec vllm serve \
                   deepseek-ai/DeepSeek-V3 \
                   --port 8000 \
+                  --load-format dummy \
                   --disable-uvicorn-access-log \
                   --enable-expert-parallel \
                   --data-parallel-hybrid-lb \
@@ -68,19 +67,18 @@ spec:
               - name: DP_SIZE_LOCAL
                 value: "4"
 
-              # MNNVL-specific settings for GB200 NVL72
-              - name: VLLM_DEEPEP_LOW_LATENCY_ALLOW_NVLINK
-                value: "1"
-              - name: VLLM_DEEPEP_LOW_LATENCY_USE_MNNVL
-                value: "1"
-              - name: VLLM_FUSED_MOE_CHUNK_SIZE
-                value: "1024"
+              - name: VLLM_MOE_ROUTING_SIMULATION_STRATEGY
+                value: "uniform_random"
 
               # All2All backend - use high_throughput for unified serving
               # (low_latency is decode-optimized but can be flaky on new hardware)
               - name: VLLM_ALL2ALL_BACKEND
-                value: deepep_high_throughput
+                value: deepep_low_latency
               - name: VLLM_DEEPEP_HIGH_THROUGHPUT_FORCE_INTRA_NODE
+                value: "1"
+              - name: VLLM_DEEPEP_LOW_LATENCY_ALLOW_NVLINK
+                value: "1"
+              - name: VLLM_DEEPEP_LOW_LATENCY_USE_MNNVL
                 value: "1"
 
               # Common vLLM settings
@@ -92,6 +90,11 @@ spec:
                 value: "1"
               - name: NVIDIA_GDRCOPY
                 value: enabled
+
+              # Override container default that disables VMM
+              # VMM is required for fabric memory / MNNVL cross-pod communication
+              - name: NVSHMEM_DISABLE_CUDA_VMM
+                value: "0"
 
               # Debug logging
               - name: VLLM_LOGGING_LEVEL
@@ -111,6 +114,8 @@ spec:
               initialDelaySeconds: 60
               periodSeconds: 10
             resources:
+              claims:
+                - name: compute-domain-channel
               limits:
                 ephemeral-storage: 64Gi
                 memory: 512Gi
@@ -123,6 +128,4 @@ spec:
             volumeMounts:
               - mountPath: /dev/shm
                 name: dshm
-              - name: shared-cuda
-                mountPath: /usr/local/cuda
             workingDir: /code
