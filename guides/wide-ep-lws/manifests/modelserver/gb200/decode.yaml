@@ -132,6 +132,10 @@ spec:
               - name: UCX_NET_DEVICES
                 value: "mlx5_0:1,mlx5_1:1,mlx5_3:1,mlx5_4:1"
 
+              # Engine startup timeout (default 600s, increase for large models over network storage)
+              - name: VLLM_ENGINE_READY_TIMEOUT_S
+                value: "1800"
+
               # Debug logging
               - name: VLLM_LOGGING_LEVEL
                 value: INFO
