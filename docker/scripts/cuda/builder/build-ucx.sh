@@ -1,5 +1,5 @@
 #!/bin/bash
-set -Ee
+set -Eeux
 
 # purpose: builds and installs UCX from source
 # --------------------------------------------
@@ -7,6 +7,9 @@ set -Ee
 # - /run/secrets/aws_access_key_id: AWS access key ID for role that can only interact with SCCache S3 Bucket
 # - /run/secrets/aws_secret_access_key: AWS secret access key for role that can only interact with SCCache S3 Bucket
 # --------------------------------------------
+# Optional environment variables:
+# - EFA_PREFIX: Path to EFA installation
+: "${EFA_PREFIX:=}"
 # Required environment variables:
 # - CUDA_HOME: Cuda runtime path to install UCX against
 # - UCX_REPO: git remote to build UCX from

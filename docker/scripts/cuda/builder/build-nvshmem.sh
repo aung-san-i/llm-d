@@ -1,8 +1,11 @@
 #!/bin/bash
-set -Eex
+set -Eeux
 
 # builds and installs NVSHMEM from source with coreweave patch
 #
+# Optional environment variables:
+# - EFA_PREFIX: Path to EFA installation
+: "${EFA_PREFIX:=}"
 # Required environment variables:
 # - TARGETOS: OS type (ubuntu or rhel)
 # - CUDA_MAJOR: CUDA major version (e.g., 12)
@@ -12,7 +15,6 @@ set -Eex
 # - NVSHMEM_VERSION: NVSHMEM version to build (e.g., 3.3.20, or git ref if NVSHMEM_USE_GIT=true)
 # - NVSHMEM_DIR: NVSHMEM installation directory
 # - NVSHMEM_CUDA_ARCHITECTURES: CUDA architectures to build for
-# - EFA_PREFIX: Path to EFA installation
 # - UCX_PREFIX: Path to UCX installation
 # - VIRTUAL_ENV: Path to the virtual environment from which python will be pulled
 # - USE_SCCACHE: whether to use sccache (true/false)

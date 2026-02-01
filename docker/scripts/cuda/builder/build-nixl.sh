@@ -1,14 +1,16 @@
 #!/bin/bash
-set -Eex
+set -Eeux
 
 # purpose: builds NIXL from source, gated by `BUILD_NIXL_FROM_SOURCE`
 #
+# Optional environment variables:
+# - EFA_PREFIX: Path to Libfabric installation
+: "${EFA_PREFIX:=}"
 # Required environment variables:
 # - BUILD_NIXL_FROM_SOURCE: if nixl should be installed by vLLM or has been built from source in the builder stages
 # - NIXL_REPO: Git repo to use for NIXL
 # - NIXL_VERSION: Git ref to use for NIXL
 # - NIXL_PREFIX: Path to install NIXL to
-# - EFA_PREFIX: Path to Libfabric installation
 # - UCX_PREFIX: Path to UCX installation
 # - VIRTUAL_ENV: Path to the virtual environment
 # - USE_SCCACHE: whether to use sccache (true/false)
