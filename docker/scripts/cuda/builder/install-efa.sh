@@ -1,5 +1,6 @@
 #!/bin/bash
-set -Eeux
+set -Eeu
+# special logging exception - do not use high level logging with EFA installer + entitlement
 
 # purpose: Install EFA
 # -------------------------------
