@@ -93,7 +93,7 @@ decode:
         httpGet:
           path: /v1/models
           port: vllm
-        initialDelaySeconds: 30
+        initialDelaySeconds: 120
         periodSeconds: 30
         timeoutSeconds: 10
         failureThreshold: 60
@@ -192,7 +192,7 @@ prefill:
         httpGet:
           path: /v1/models
           port: vllm
-        initialDelaySeconds: 30
+        initialDelaySeconds: 120
         periodSeconds: 30
         timeoutSeconds: 10
         failureThreshold: 60
