@@ -13,6 +13,12 @@ modelArtifacts:
   size: 10Gi  # Smaller model size for Intel XPU
   authSecretName: "llm-d-hf-token"
   name: "Qwen/Qwen3-0.6B"
+  labels:
+    llm-d.ai/inference-serving: "true"
+    llm-d.ai/guide: "pd-disaggregation"
+    llm-d.ai/hardware-vairant: "xpu"
+    llm-d.ai/hardware-vendor: "intel"
+    llm-d.ai/model: "Qwen/Qwen3-0.6B"
 
 routing:
   servicePort: 8000
