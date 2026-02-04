@@ -1,7 +1,7 @@
 #!/bin/bash
 set -Eeux
 
-# builds compiled extension wheels (FlashInfer, DeepEP, DeepGEMM, pplx-kernels)
+# builds compiled extension wheels (FlashInfer, DeepEP, DeepGEMM)
 #
 # Required environment variables:
 # - VIRTUAL_ENV: path to Python virtual environment
@@ -13,8 +13,6 @@ set -Eeux
 # - DEEPEP_VERSION: DeepEP version tag
 # - DEEPGEMM_REPO: DeepGEMM repository URL
 # - DEEPGEMM_VERSION: DeepGEMM version tag
-# - PPLX_KERNELS_REPO: pplx-kernels repository URL
-# - PPLX_KERNELS_VERSION: pplx-kernels commit SHA
 # - USE_SCCACHE: whether to use sccache (true/false)
 # - TARGETPLATFORM: Docker buildx platform (e.g., linux/amd64, linux/arm64)
 
@@ -29,6 +27,10 @@ cd /tmp
 
 # install build tools (cmake from pip provides 3.22+ needed by pplx-kernels)
 uv pip install build cuda-python numpy setuptools-scm ninja cmake requests filelock tqdm
+
+# Add CUDA stubs to library path for build-time linking (libcuda.so is not available in containers)
+export LIBRARY_PATH="${CUDA_HOME}/lib64/stubs:${LIBRARY_PATH:-}"
+# TODO: Consider using TORCH_CUDA_ARCH_LIST from Dockerfile ENV instead of hardcoding
 # overwrite the TORCH_CUDA_ARCH_LIST for MoE kernels
 export TORCH_CUDA_ARCH_LIST="9.0a;10.0+PTX"
 
@@ -58,13 +60,6 @@ git submodule update --init --recursive
 uv build --wheel --no-build-isolation --out-dir /wheels
 cd ..
 rm -rf deepgemm
-
-git clone "${PPLX_KERNELS_REPO}" pplx-kernels
-cd pplx-kernels
-git checkout "${PPLX_KERNELS_VERSION}"
-uv build --wheel --no-build-isolation --out-dir /wheels
-cd ..
-rm -rf pplx-kernels
 
 if [ "${USE_SCCACHE}" = "true" ]; then
   echo "=== Compiled wheels build complete - sccache stats ==="

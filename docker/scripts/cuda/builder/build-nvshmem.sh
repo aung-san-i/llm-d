@@ -29,7 +29,7 @@ if [ "${NVSHMEM_USE_GIT}" = "true" ]; then
     git clone "${NVSHMEM_REPO}" nvshmem_src && cd nvshmem_src
     git checkout -q "${NVSHMEM_VERSION}"
 else
-    wget "https://developer.download.nvidia.com/compute/redist/nvshmem/${NVSHMEM_VERSION}/source/nvshmem_src_cuda12-all-all-${NVSHMEM_VERSION}.tar.gz" \
+    wget "https://developer.download.nvidia.com/compute/redist/nvshmem/${NVSHMEM_VERSION}/source/nvshmem_src_cuda${CUDA_MAJOR}-all-all-${NVSHMEM_VERSION}.tar.gz" \
     -O "nvshmem_src_cuda${CUDA_MAJOR}.tar.gz"
     tar -xf "nvshmem_src_cuda${CUDA_MAJOR}.tar.gz"
     cd nvshmem_src
@@ -75,14 +75,12 @@ cmake \
     -DNVSHMEM_USE_NCCL=0 \
     -DNVSHMEM_BUILD_TESTS=0 \
     -DNVSHMEM_BUILD_EXAMPLES=0 \
+    -DNVSHMEM_BUILD_PYTHON_LIB=OFF \
     ${EFA_FLAGS[@]} \
     ..
 
 ninja -j"$(nproc)"
 ninja install
-
-# copy python wheel to /wheels
-cp "${NVSHMEM_DIR}"/lib/python/dist/nvshmem4py_cu"${CUDA_MAJOR}"-*-cp"${PYTHON_VERSION/./}"-cp"${PYTHON_VERSION/./}"-manylinux*.whl /wheels/
 
 cd /tmp
 rm -rf nvshmem_src*
