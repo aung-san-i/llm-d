@@ -89,7 +89,12 @@ spec:
                   --all2all-backend "deepep_low_latency" \
                   --compilation_config '{"cudagraph_mode": "FULL_DECODE_ONLY"}' \
                   --gpu-memory-utilization 0.85 \
-                  --max-num-batched-tokens $VLLM_MOE_DP_CHUNK_SIZE
+                  --max-num-batched-tokens $VLLM_MOE_DP_CHUNK_SIZE \
+                  --profiler-config '{"profiler": "torch",
+                                      "torch_profiler_dir": "/traces", 
+                                      "delay_iterations": 5, 
+                                      "max_iterations": 3}' \
+                  --api-server-count 1
 
             env:
               - name: VLLM_MOE_DP_CHUNK_SIZE

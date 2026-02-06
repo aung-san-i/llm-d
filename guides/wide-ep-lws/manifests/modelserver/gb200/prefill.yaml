@@ -69,7 +69,8 @@ spec:
                                           "kv_load_failure_policy":"fail"}' \
                   --async-scheduling \
                   --all2all-backend "deepep_high_throughput" \
-                  --gpu-memory-utilization 0.75
+                  --gpu-memory-utilization 0.75 \
+                  --api-server-count 1
             env:
               # HuggingFace token and cache location
               - name: HF_TOKEN
