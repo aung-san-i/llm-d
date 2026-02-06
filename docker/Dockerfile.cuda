@@ -484,13 +484,16 @@ RUN umask 002 && \
 
 # default opinionated env var for HF_HOME, over-writeable
 ENV LLM_D_MODELS_DIR=/var/lib/llm-d/models \
-    HF_HOME=/var/lib/llm-d/.hf
+    HF_HOME=/var/lib/llm-d/.hf \
+    KVCACHE_OFFLOAD_PATH=/kv-store-disk
 
 # creates default models directory and makes path writeable for both root and default user, with symlink for convenience
 # find command keeps group=0 on all new subdirs created later
-RUN mkdir -p "$LLM_D_MODELS_DIR" "$HF_HOME" && \
+RUN mkdir -p "$LLM_D_MODELS_DIR" "$HF_HOME" "$KVCACHE_OFFLOAD_PATH" && \
     chown -R root:0 /var/lib/llm-d && \
     chmod -R g+rwX /var/lib/llm-d && \
+    chown -R root:0 "${KVCACHE_OFFLOAD_PATH}" && \
+    chmod -R g+rwX "${KVCACHE_OFFLOAD_PATH}" && \
     find /var/lib/llm-d -type d -exec chmod g+s {} \; && \
     ln -snf /var/lib/llm-d/models /models
 
