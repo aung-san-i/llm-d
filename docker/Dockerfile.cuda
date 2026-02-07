@@ -63,8 +63,10 @@ ARG FLASHINFER_REPO="https://github.com/flashinfer-ai/flashinfer.git"
 ARG FLASHINFER_VERSION="v0.5.3"
 
 # vLLM build settings
-ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
-ARG VLLM_COMMIT_SHA="d7de043d55d1dd629554467e23874097e1c48993"
+ARG VLLM_REPO="https://github.com/Gregory-Pereira/vllm.git"
+# my commit cherry-picked onto v0.14.1 branch
+ARG VLLM_COMMIT_SHA="2d6f29fb2dac316b5dc150449cfb8e9ec8bea3f1"
+# v0.14.1 release branch
 ARG VLLM_PRECOMPILED_WHEEL_COMMIT="d7de043d55d1dd629554467e23874097e1c48993"
 ARG VLLM_PREBUILT=0
 ARG VLLM_USE_PRECOMPILED=1
