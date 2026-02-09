@@ -12,7 +12,7 @@ metadata:
 spec:
   replicas: 1
   leaderWorkerTemplate:
-    size: 2
+    size: 1
     workerTemplate:
       metadata:
         labels:
@@ -55,7 +55,7 @@ spec:
             emptyDir: {}
         containers:
           - name: vllm
-            image: ghcr.io/llm-d/llm-d-cuda-dev:sha-b0cb88f
+            image: ghcr.io/llm-d/llm-d-cuda-dev:sha-0ff63c8
             securityContext:
               capabilities:
                 add:
