@@ -11,8 +11,8 @@ This guide demonstrates how to deploy GPT-OSS-120B using vLLM's P/D disaggregati
 
 In this example, we will demonstrate a deployment of `openai/gpt-oss-120b` with:
 
-* 4 TP=1 Prefill Workers
-* 1 TP=4 Decode Worker
+* 8 TP=1 Prefill Workers
+* 2 TP=4 Decode Worker
 
 ## P/D Best Practices
 
@@ -38,7 +38,7 @@ For very large models leveraging wide-EP, traffic for KV cache transfer may cont
 
 ## Hardware Requirements
 
-This guide expects 8 Nvidia GPUs of any kind, and RDMA via InfiniBand or RoCE between all pods in the workload.
+This guide expects 16 NVIDIA GPUs and RDMA via InfiniBand or RoCE between all pods in the workload.
 
 ## Prerequisites
 
@@ -446,3 +446,29 @@ kubectl delete -f httproute.gke.yaml -n ${NAMESPACE}
 ## Customization
 
 For information on customizing a guide and tips to build your own, see [our docs](../../docs/customizing-a-guide.md)
+
+
+Baseline:
+
+```
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: baseline
+  labels:
+    app: baseline
+spec:
+  type: ClusterIP
+  selector:
+    app: baseline
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+```
+
+```
+kubectl create configmap inference-perf-config --from-file=config.yaml
+kubectl apply -f benchmark.yaml
+```

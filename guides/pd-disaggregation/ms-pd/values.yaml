@@ -23,13 +23,15 @@ decode:
   parallelism:
     tensor: 4
   create: true
-  replicas: 1
+  replicas: 2
+  nodeSelector:
+    gpu.nvidia.com/class: H200
   monitoring:
     podmonitor:
       enabled: true
       portName: "vllm"  # decode vLLM service port (from routing.proxy.targetPort)
       path: "/metrics"
-      interval: "30s"
+      interval: "5s"
   containers:
     - name: "vllm"
       image: ghcr.io/llm-d/llm-d-cuda:v0.5.0
@@ -109,13 +111,15 @@ prefill:
   parallelism:
     tensor: 1
   create: true
-  replicas: 4
+  replicas: 8
+  nodeSelector:
+    gpu.nvidia.com/class: H200
   monitoring:
     podmonitor:
       enabled: true
       portName: "vllm"  # prefill vLLM service port (from routing.servicePort)
       path: "/metrics"
-      interval: "30s"
+      interval: "5s"
   containers:
     - name: "vllm"
       image: ghcr.io/llm-d/llm-d-cuda:v0.5.0
