@@ -19,6 +19,7 @@ set -Eeux
 # - VIRTUAL_ENV: Path to the virtual environment from which python will be pulled
 # - USE_SCCACHE: whether to use sccache (true/false)
 # - PYTHON_VERSION: Python version (e.g., 3.12)
+# - BUILD_DEBUG: whether to build with debug symbols and logging (true/false) - defaults to false
 
 cd /tmp
 
@@ -48,8 +49,46 @@ done
 
 mkdir -p build && cd build
 
+# Create nvcc wrapper to filter out problematic flags when in debug mode
+if [ "${BUILD_DEBUG}" = "true" ]; then
+    cat > /tmp/nvcc_wrapper.sh << 'WRAPPER_EOF'
+#!/bin/bash
+# Filter out problematic flags that cause build failures
+args=()
+skip_next=false
+for arg in "$@"; do
+    if [ "$skip_next" = true ]; then
+        skip_next=false
+        continue
+    fi
+    case "$arg" in
+        -G|-t4)
+            # Skip device debug and thread flags
+            continue
+            ;;
+        -Werror)
+            # Skip next arg (all-warnings)
+            skip_next=true
+            continue
+            ;;
+        *)
+            args+=("$arg")
+            ;;
+    esac
+done
+exec /usr/local/cuda/bin/nvcc "${args[@]}"
+WRAPPER_EOF
+    chmod +x /tmp/nvcc_wrapper.sh
+    export CUDA_NVCC_EXECUTABLE=/tmp/nvcc_wrapper.sh
+
+    # Also suppress the maybe-uninitialized warning for C++ files
+    export CXXFLAGS="${CXXFLAGS:-} -Wno-maybe-uninitialized"
+
+    echo "=== Using nvcc wrapper and CXXFLAGS to suppress debug build warnings ==="
+fi
+
 # Ubuntu image needs to be built against Ubuntu 20.04 and EFA only supports 22.04 and 24.04.
-EFA_FLAGS=("")
+EFA_FLAGS=()
 if [ "$TARGETOS" = "rhel" ] && [ -n "${EFA_PREFIX}" ]; then
     EFA_FLAGS=(
         -DNVSHMEM_LIBFABRIC_SUPPORT=1
@@ -57,11 +96,29 @@ if [ "$TARGETOS" = "rhel" ] && [ -n "${EFA_PREFIX}" ]; then
     )
 fi
 
+# Configure debug build options
+DEBUG_FLAGS=()
+NVCC_COMPILER="${CUDA_HOME}/bin/nvcc"
+: "${BUILD_DEBUG:=false}"
+if [ "${BUILD_DEBUG}" = "true" ]; then
+    echo "=== Building NVSHMEM with debug symbols and logging enabled ==="
+    # Use the wrapper that filters out problematic flags
+    NVCC_COMPILER="/tmp/nvcc_wrapper.sh"
+    DEBUG_FLAGS=(
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        -DNVSHMEM_DEBUG=ON
+        -DNVSHMEM_DEVEL=ON
+        -DNVSHMEM_WERROR=OFF
+    )
+else
+    echo "=== Building NVSHMEM in release mode ==="
+fi
+
 cmake \
     -G Ninja \
     -DNVSHMEM_PREFIX="${NVSHMEM_DIR}" \
     -DCMAKE_CUDA_ARCHITECTURES="${NVSHMEM_CUDA_ARCHITECTURES}" \
-    -DCMAKE_CUDA_COMPILER="${CUDA_HOME}/bin/nvcc" \
+    -DCMAKE_CUDA_COMPILER="${NVCC_COMPILER}" \
     -DNVSHMEM_PMIX_SUPPORT=0 \
     -DNVSHMEM_IBRC_SUPPORT=1 \
     -DNVSHMEM_IBGDA_SUPPORT=1 \
@@ -75,7 +132,8 @@ cmake \
     -DNVSHMEM_USE_NCCL=0 \
     -DNVSHMEM_BUILD_TESTS=0 \
     -DNVSHMEM_BUILD_EXAMPLES=0 \
-    ${EFA_FLAGS[@]} \
+    "${DEBUG_FLAGS[@]}" \
+    "${EFA_FLAGS[@]}" \
     ..
 
 ninja -j"$(nproc)"
