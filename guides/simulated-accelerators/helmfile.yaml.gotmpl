@@ -41,7 +41,7 @@ releases:
   - name: {{ printf "gaie-%s" $rn | quote }}
     namespace: {{ $ns }}
     chart: oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool
-    version: v1.2.0
+    version: v1.3.0
     installed: true
     needs:
       - {{ printf "infra-%s" $rn | quote }}
@@ -54,10 +54,8 @@ releases:
           apiVersion: {{ .Environment.Values.inferencePool.apiVersion }}
         inferenceExtension:
           monitoring:
-            gke:
-              enabled: true
             prometheus:
-              enabled: false
+              enabled: true
     {{- else if or (eq .Environment.Name "istio") (eq .Environment.Name "default") }}
       - provider:
           name: {{ .Environment.Values.provider.name }}
@@ -74,7 +72,7 @@ releases:
   - name: {{ printf "ms-%s" $rn | quote }}
     namespace: {{ $ns }}
     chart: llm-d-modelservice/llm-d-modelservice
-    version: v0.3.17
+    version: v0.4.5
     installed: true
     needs:
       - {{ printf "infra-%s" $rn | quote }}

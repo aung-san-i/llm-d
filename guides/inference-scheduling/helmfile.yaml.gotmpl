@@ -17,9 +17,11 @@ environments:
     values:
       - provider:
           name: none
+  amd: &AMD
+    <<: *I
   xpu: &XPU
     <<: *I
-  gaudi: &GAUDI
+  hpu: &HPU
     <<: *I
   cpu: &CPU
     <<: *I
@@ -75,13 +77,11 @@ releases:
           name: {{ .Environment.Values.provider.name }}
         inferenceExtension:
           monitoring:
-            gke:
-              enabled: true
             prometheus:
-              enabled: false
+              enabled: true
     {{- end }}
     # Apply destination rule for anything istio
-    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "xpu") (eq .Environment.Name "gaudi") (eq .Environment.Name "cpu") }}
+    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "amd") (eq .Environment.Name "xpu") (eq .Environment.Name "hpu") (eq .Environment.Name "cpu") }}
       - provider:
           name: {{ .Environment.Values.provider.name }}
           istio:
@@ -97,7 +97,7 @@ releases:
   - name: {{ printf "ms-%s" $rn | quote }}
     namespace: {{ $ns }}
     chart: llm-d-modelservice/llm-d-modelservice
-    version: v0.3.17
+    version: v0.4.5
     installed: true
     needs:
       {{- if ne .Environment.Name "standalone" }}
@@ -107,10 +107,12 @@ releases:
     values:
     {{- if eq .Environment.Name "gke_tpu" }}
       - ms-inference-scheduling/values_tpu.yaml
+    {{- else if eq .Environment.Name "amd" }}
+      - ms-inference-scheduling/values_amd.yaml
     {{- else if eq .Environment.Name "xpu" }}
       - ms-inference-scheduling/values_xpu.yaml
-    {{- else if eq .Environment.Name "gaudi" }}
-      - ms-inference-scheduling/values-gaudi.yaml
+    {{- else if eq .Environment.Name "hpu" }}
+      - ms-inference-scheduling/values-hpu.yaml
     {{- else if eq .Environment.Name "cpu" }}
       - ms-inference-scheduling/values_cpu.yaml
     {{- else if eq .Environment.Name "digitalocean" }}
