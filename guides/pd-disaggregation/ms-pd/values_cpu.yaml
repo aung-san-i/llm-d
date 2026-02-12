@@ -47,6 +47,8 @@ decode:
         - "--disable-uvicorn-access-log"
         - "--enforce-eager"
         - "--disable-hybrid-kv-cache-manager"
+        - "--max-model-len"
+        - "32768"
       env:
         - name: UCX_TLS
           value: "tcp"
@@ -80,10 +82,10 @@ decode:
           protocol: TCP
       resources:
         limits:
-          memory: 64Gi
+          memory: 128Gi
           cpu: "64"
         requests:
-          memory: 64Gi
+          memory: 128Gi
           cpu: "64"
       mountModelVolume: true
       volumeMounts:
@@ -121,7 +123,7 @@ decode:
     - name: shm
       emptyDir:
         medium: Memory
-        sizeLimit: "16Gi"
+        sizeLimit: "32Gi"
     - name: torch-compile-cache
       emptyDir: {}
 
@@ -146,6 +148,8 @@ prefill:
         - "--disable-uvicorn-access-log"
         - "--enforce-eager"
         - "--disable-hybrid-kv-cache-manager"
+        - "--max-model-len"
+        - "32768"
       env:
         - name: UCX_TLS
           value: "tcp"
@@ -179,10 +183,10 @@ prefill:
           protocol: TCP
       resources:
         limits:
-          memory: 64Gi
+          memory: 128Gi
           cpu: "64"
         requests:
-          memory: 64Gi
+          memory: 128Gi
           cpu: "64"
       mountModelVolume: true
       volumeMounts:
@@ -220,7 +224,7 @@ prefill:
     - name: shm
       emptyDir:
         medium: Memory
-        sizeLimit: "16Gi"
+        sizeLimit: "32Gi"
     - name: torch-compile-cache
       emptyDir: {}
 
