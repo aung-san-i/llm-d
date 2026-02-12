@@ -18,65 +18,6 @@ EOF
   exit 0
 }
 
-# ── Diagnostic function ─────────────────────────────────────────────────────
-print_diagnostics() {
-  local ns="$1"
-  echo ""
-  echo "=========================================="
-  echo "DIAGNOSTIC INFORMATION FOR NAMESPACE: $ns"
-  echo "=========================================="
-  echo ""
-  
-  echo "=== Pods ==="
-  kubectl get pods -n "$ns" -o wide || true
-  echo ""
-  
-  echo "=== Services ==="
-  kubectl get svc -n "$ns" || true
-  echo ""
-  
-  echo "=== Gateways ==="
-  kubectl get gateway -n "$ns" -o wide || true
-  echo ""
-  
-  echo "=== HTTPRoutes ==="
-  kubectl get httproute -n "$ns" -o wide || true
-  echo ""
-  
-  echo "=== InferencePools ==="
-  kubectl get inferencepool -n "$ns" -o wide || true
-  echo ""
-  
-  echo "=== Gateway Details ==="
-  kubectl get gateway -n "$ns" -o yaml || true
-  echo ""
-  
-  echo "=== HTTPRoute Details ==="
-  kubectl get httproute -n "$ns" -o yaml || true
-  echo ""
-  
-  echo "=== Recent Events ==="
-  kubectl get events -n "$ns" --sort-by='.lastTimestamp' | tail -20 || true
-  echo ""
-  
-  echo "=== Gateway Pod Logs (last 50 lines) ==="
-  # Try multiple label selectors to find gateway pod
-  local gw_pod=$(kubectl get pods -n "$ns" -l "app.kubernetes.io/name=inference-gateway" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-  if [[ -z "$gw_pod" ]]; then
-    # Try alternative label selector for istio gateway
-    gw_pod=$(kubectl get pods -n "$ns" | grep "inference-gateway" | head -1 | awk '{print $1}' 2>/dev/null || true)
-  fi
-  if [[ -n "$gw_pod" ]]; then
-    echo "Gateway pod: $gw_pod"
-    kubectl logs -n "$ns" "$gw_pod" --tail=50 || true
-  else
-    echo "No gateway pod found"
-  fi
-  echo ""
-  
-  echo "=========================================="
-}
-
 # ── Defaults ────────────────────────────────────────────────────────────────
 NAMESPACE="llm-d"
 CLI_MODEL_ID=""
