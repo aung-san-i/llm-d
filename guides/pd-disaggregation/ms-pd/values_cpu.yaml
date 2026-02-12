@@ -49,6 +49,8 @@ decode:
         - "--disable-hybrid-kv-cache-manager"
         - "--max-model-len"
         - "32768"
+        - "--cpu-kvcache-space"
+        - "60"
       env:
         - name: UCX_TLS
           value: "tcp"
@@ -150,6 +152,8 @@ prefill:
         - "--disable-hybrid-kv-cache-manager"
         - "--max-model-len"
         - "32768"
+        - "--cpu-kvcache-space"
+        - "60"
       env:
         - name: UCX_TLS
           value: "tcp"
