@@ -73,6 +73,8 @@ decode:
           value: "1"
         - name: VLLM_KV_CACHE_LAYOUT
           value: "HND"
+        - name: UCX_NET_DEVICES
+          value: "all"
         - name: OMP_NUM_THREADS
           value: "64"
         - name: LD_LIBRARY_PATH
@@ -178,6 +180,8 @@ prefill:
           value: "1"
         - name: VLLM_KV_CACHE_LAYOUT
           value: "HND"
+        - name: UCX_NET_DEVICES
+          value: "all"
         - name: OMP_NUM_THREADS
           value: "64"
         - name: LD_LIBRARY_PATH
