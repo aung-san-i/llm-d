@@ -6,6 +6,8 @@ set -Eeux
 # Optional environment variables:
 # - EFA_PREFIX: Path to EFA installation
 : "${EFA_PREFIX:=}"
+# - BUILD_DEBUG: whether to build with debug symbols and logging (true/false) - defaults to false
+: "${BUILD_DEBUG:=false}"
 # Required environment variables:
 # - TARGETOS: OS type (ubuntu or rhel)
 # - CUDA_MAJOR: CUDA major version (e.g., 12)
@@ -19,9 +21,14 @@ set -Eeux
 # - VIRTUAL_ENV: Path to the virtual environment from which python will be pulled
 # - USE_SCCACHE: whether to use sccache (true/false)
 # - PYTHON_VERSION: Python version (e.g., 3.12)
-# - BUILD_DEBUG: whether to build with debug symbols and logging (true/false) - defaults to false
 
 cd /tmp
+
+if [ "${BUILD_DEBUG}" = "true" ]; then
+    # Disable sccache for nvshmem build in debug mode for nvcc + sccache + cmake weirdness. 
+    # Not an issue for regular builds, only for BUILD_DEBUG=true
+    export USE_SCCACHE="false"
+fi
 
 . /usr/local/bin/setup-sccache
 . "${VIRTUAL_ENV}/bin/activate"
@@ -49,11 +56,18 @@ done
 
 mkdir -p build && cd build
 
+EFA_FLAGS=()
+if [ "$TARGETOS" = "rhel" ] && [ -n "${EFA_PREFIX}" ]; then
+    EFA_FLAGS=(
+        -DNVSHMEM_LIBFABRIC_SUPPORT=1
+        -DLIBFABRIC_HOME="${EFA_PREFIX}"
+    )
+fi
+
 # Ubuntu image needs to be built against Ubuntu 20.04 and EFA only supports 22.04 and 24.04.
 # Configure debug build options
 DEBUG_FLAGS=()
 CMAKE_EXTRA_FLAGS=()
-: "${BUILD_DEBUG:=false}"
 
 if [ "${BUILD_DEBUG}" = "true" ]; then
     echo "=== Building NVSHMEM with debug symbols and logging enabled ==="
@@ -61,7 +75,6 @@ if [ "${BUILD_DEBUG}" = "true" ]; then
         -DCMAKE_BUILD_TYPE=RelWithDebInfo
         -DNVSHMEM_DEBUG=ON
         -DNVSHMEM_DEVEL=ON
-        -DNVSHMEM_WERROR=OFF
     )
 
     # Host compiler: keep warnings, but don't fail the build on maybe-uninitialized
