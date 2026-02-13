@@ -202,7 +202,7 @@ curl -s http://${ENDPOINT}/v1/completions \
   }' | jq
 ```
 
-For more information options to set for the `/v1/completions` endpoint, see the [openAI API server /v1/completions docs](https://platform.openai.com/docs/api-reference/completions/create)
+For more information options to set for the `/v1/completions` endpoint, see the [openAI API server /v1/completions docs](https://developers.openai.com/api/reference/resources/completions/methods/create)
 
 ### /v1/chat/completions (coming soon)
 

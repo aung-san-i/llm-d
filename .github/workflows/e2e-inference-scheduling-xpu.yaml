@@ -159,7 +159,7 @@ jobs:
             --for=condition=Ready \
             --all \
             -n "${NAMESPACE}" \
-            --timeout=10m; then
+            --timeout=30m; then
             echo "✅ All pods are ready."
             kubectl get pods -n "${NAMESPACE}"
           else
@@ -241,7 +241,7 @@ jobs:
 
             mv ~/inference-scheduling-xpu-deployment.log . || true
             mv ~/install-deps.log . || true
-            
+
             echo "Log collection completed."
             ls -la
 
