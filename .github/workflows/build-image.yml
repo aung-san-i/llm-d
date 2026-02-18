@@ -176,6 +176,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Export Git SHA
+        id: git-sha
+        run: |
+          echo "shortsha=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "fullsha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -249,6 +255,8 @@ jobs:
           mkdir -p /tmp/digests/${{ matrix.os }}
           digest="${{ steps.build-debug.outputs.digest }}"
           touch "/tmp/digests/${{ matrix.os }}/${digest#sha256:}"
+          echo "${{ steps.git-sha.outputs.shortsha }}" > /tmp/digests/${{ matrix.os }}/git-sha.txt
+          echo "${{ steps.git-sha.outputs.fullsha }}" > /tmp/digests/${{ matrix.os }}/git-fullsha.txt
 
       - name: Upload digest
         if: ${{ steps.build-debug.outputs.digest != '' }}
@@ -259,16 +267,231 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Tag latest on default branch
-        if: |
-          steps.build-debug.outputs.digest != '' &&
-          github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
-          github.event_name != 'pull_request'
+  cuda-debug-success-check:
+    needs: cuda-build-llm-d-debug
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    outputs:
+      any_succeeded: ${{ steps.check.outputs.any_succeeded }}
+      rhel_ok: ${{ steps.check.outputs.rhel_ok }}
+      ubuntu_ok: ${{ steps.check.outputs.ubuntu_ok }}
+      shortsha: ${{ steps.export-sha.outputs.shortsha }}
+      fullsha: ${{ steps.export-sha.outputs.fullsha }}
+    steps:
+      - name: Download all digests (best-effort)
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests-raw
+          pattern: digests-cuda-dev-debug-*
+        continue-on-error: true
+
+      - name: Reorganize digests by OS
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}"
-          docker buildx imagetools create \
-            -t "${IMAGE}:latest" \
-            "${IMAGE}@${{ steps.build-debug.outputs.digest }}"
+          mkdir -p /tmp/digests/rhel /tmp/digests/ubuntu
+          shopt -s nullglob
+          for artifact_dir in /tmp/digests-raw/digests-cuda-dev-debug-*; do
+            if [[ "$artifact_dir" == *-rhel-* ]]; then
+              cp -v "$artifact_dir"/* /tmp/digests/rhel/ 2>/dev/null || true
+            elif [[ "$artifact_dir" == *-ubuntu-* ]]; then
+              cp -v "$artifact_dir"/* /tmp/digests/ubuntu/ 2>/dev/null || true
+            fi
+          done
+          echo "=== RHEL digests ==="
+          ls -la /tmp/digests/rhel/ || echo "No RHEL digests"
+          echo "=== Ubuntu digests ==="
+          ls -la /tmp/digests/ubuntu/ || echo "No Ubuntu digests"
+
+      - name: Read Git SHA from build artifacts
+        id: export-sha
+        run: |
+          # Try to read the git SHA from any of the downloaded artifacts
+          # All builds should have the same git SHA, so we just take the first one we find
+          if [ -f /tmp/digests-raw/digests-cuda-dev-debug-rhel-amd64/git-sha.txt ]; then
+            shortsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-rhel-amd64/git-sha.txt)
+            fullsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-rhel-amd64/git-fullsha.txt)
+          elif [ -f /tmp/digests-raw/digests-cuda-dev-debug-rhel-arm64/git-sha.txt ]; then
+            shortsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-rhel-arm64/git-sha.txt)
+            fullsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-rhel-arm64/git-fullsha.txt)
+          elif [ -f /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-amd64/git-sha.txt ]; then
+            shortsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-amd64/git-sha.txt)
+            fullsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-amd64/git-fullsha.txt)
+          elif [ -f /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-arm64/git-sha.txt ]; then
+            shortsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-arm64/git-sha.txt)
+            fullsha=$(cat /tmp/digests-raw/digests-cuda-dev-debug-ubuntu-arm64/git-fullsha.txt)
+          else
+            echo "Warning: No git-sha.txt found, using current HEAD"
+            shortsha=$(git rev-parse --short=7 HEAD)
+            fullsha=$(git rev-parse HEAD)
+          fi
+          echo "shortsha=${shortsha}" >> $GITHUB_OUTPUT
+          echo "fullsha=${fullsha}" >> $GITHUB_OUTPUT
+
+      - id: check
+        shell: bash
+        run: |
+          shopt -s nullglob
+          rhel=(/tmp/digests/rhel/*)
+          ubuntu=(/tmp/digests/ubuntu/*)
+
+          # Exclude git-sha.txt and git-fullsha.txt from digest count
+          rhel_count=0
+          for file in "${rhel[@]}"; do
+            filename="$(basename "$file")"
+            [[ "$filename" != "git-sha.txt" && "$filename" != "git-fullsha.txt" ]] && ((rhel_count++))
+          done
+
+          ubuntu_count=0
+          for file in "${ubuntu[@]}"; do
+            filename="$(basename "$file")"
+            [[ "$filename" != "git-sha.txt" && "$filename" != "git-fullsha.txt" ]] && ((ubuntu_count++))
+          done
+
+          any=false; [ ${rhel_count} -gt 0 ] || [ ${ubuntu_count} -gt 0 ] && any=true
+          rhel_ok=false;   [ ${rhel_count} -gt 0 ] && rhel_ok=true
+          ubuntu_ok=false; [ ${ubuntu_count} -gt 0 ] && ubuntu_ok=true
+
+          echo "Downloaded ${rhel_count} RHEL digest(s), ${ubuntu_count} Ubuntu digest(s)"
+          echo "any_succeeded=${any}"   >> "$GITHUB_OUTPUT"
+          echo "rhel_ok=${rhel_ok}"     >> "$GITHUB_OUTPUT"
+          echo "ubuntu_ok=${ubuntu_ok}" >> "$GITHUB_OUTPUT"
+
+  cuda-debug-manifest:
+    needs: cuda-debug-success-check
+    if: ${{ needs.cuda-debug-success-check.outputs.any_succeeded == 'true' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [rhel, ubuntu]
+        include:
+          # RHEL is the default image (no suffix in image name)
+          - os: rhel
+            image_suffix: "-debug"
+            os_ok: rhel_ok
+          # Ubuntu images are tagged with -ubuntu suffix
+          - os: ubuntu
+            image_suffix: "-ubuntu-debug"
+            os_ok: ubuntu_ok
+    steps:
+      - name: Check if OS build succeeded
+        id: should-run
+        run: |
+          os_succeeded="${{ needs.cuda-debug-success-check.outputs[matrix.os_ok] }}"
+          echo "os_succeeded=${os_succeeded}" >> $GITHUB_OUTPUT
+          if [ "${os_succeeded}" != "true" ]; then
+            echo "Skipping manifest creation for ${{ matrix.os }} - no successful builds"
+          fi
+
+      - name: Download digests
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests-raw
+          pattern: digests-cuda-dev-debug-${{ matrix.os }}-*
+
+      - name: Reorganize digests for manifest
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        run: |
+          mkdir -p /tmp/digests/${{ matrix.os }}
+          shopt -s nullglob
+          for artifact_dir in /tmp/digests-raw/digests-cuda-dev-debug-${{ matrix.os }}-*; do
+            cp -v "$artifact_dir"/* /tmp/digests/${{ matrix.os }}/ 2>/dev/null || true
+          done
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract metadata
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Create and push manifest
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        id: manifest
+        working-directory: /tmp/digests/${{ matrix.os }}
+        run: |
+          set -x
+          SHORT_SHA="${{ needs.cuda-debug-success-check.outputs.shortsha }}"
+          FULL_SHA="${{ needs.cuda-debug-success-check.outputs.fullsha }}"
+          # build the list of source images (by digest)
+          sources=""
+          for digest in *; do
+            # Skip git-sha metadata files
+            [[ "$digest" == "git-sha.txt" || "$digest" == "git-fullsha.txt" ]] && continue
+            image="${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}"
+            sources="$sources ${image}@sha256:$digest"
+          done
+
+          # create manifest and tag it
+          tags="-t ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}:sha-${SHORT_SHA}"
+          tags="$tags -t ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}:sha-${FULL_SHA}"
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            tags="$tags -t ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}:pr-${{ github.event.pull_request.number }}"
+          fi
+          if [ "${{ github.ref }}" = "refs/heads/${{ github.event.repository.default_branch }}" ] && \
+             [ "${{ github.event_name }}" != "pull_request" ]; then
+            tags="$tags -t ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}:latest"
+          fi
+          docker buildx imagetools create $tags $sources
+
+          # extract final manifest digest
+          MANIFEST_DIGEST=$(docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}:sha-${SHORT_SHA} \
+            | awk '/^Digest:/ {print $2}')
+          echo "digest=${MANIFEST_DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: >-
+            ${{ env.REGISTRY }}/${{ github.repository }}-cuda${{ matrix.image_suffix }}@${{
+              steps.manifest.outputs.digest }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          scanners: vuln
+          timeout: 30m
+          skip-dirs: /root/.cache/uv
+        env:
+          TRIVY_USERNAME: ${{ secrets.GHCR_USER }}
+          TRIVY_PASSWORD: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Display vulnerability summary
+        if: ${{ steps.should-run.outputs.os_succeeded == 'true' }}
+        run: |
+          echo "=== Vulnerability Scan Summary ==="
+          if [ -f trivy-results.sarif ]; then
+            echo "Scan completed. Check the Security tab for detailed results."
+          else
+            echo "No vulnerabilities found or scan failed."
+          fi
 
   cuda-build-llm-d:
     needs: [detect-changes]
@@ -1029,8 +1252,10 @@ jobs:
       - name: Set image tag
         id: set-tag
         run: |
-          TAG="sha-$(git rev-parse --short HEAD)"
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          echo "short_tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_tag=sha-${FULL_SHA}" >> $GITHUB_OUTPUT
           PR_TAG="${{ github.event.pull_request.number }}"
           if [ -n "${PR_TAG}" ]; then
             echo "pr_tag=pr-${PR_TAG}" >> $GITHUB_OUTPUT
@@ -1056,7 +1281,8 @@ jobs:
           # cache-from: type=gha,scope=xpu-dev
           # cache-to: type=gha,mode=max,scope=xpu-dev,oci-mediatypes=true,compression=zstd
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}-xpu-dev:${{ steps.set-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-xpu-dev:${{ steps.set-tag.outputs.short_tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-xpu-dev:${{ steps.set-tag.outputs.full_tag }}
             ${{ steps.set-tag.outputs.pr_tag != '' && format('{0}/{1}-xpu-dev:{2}', env.REGISTRY, github.repository, steps.set-tag.outputs.pr_tag) || '' }}
             ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request' && format('{0}/{1}-xpu-dev:latest', env.REGISTRY, github.repository) || '' }}
           github-token: ${{ secrets.GHCR_TOKEN }}
@@ -1067,7 +1293,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-xpu-dev:${{ steps.set-tag.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-xpu-dev:${{ steps.set-tag.outputs.short_tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
@@ -1120,8 +1346,10 @@ jobs:
       - name: Set image tag
         id: set-tag
         run: |
-          TAG="sha-$(git rev-parse --short HEAD)"
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          echo "short_tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_tag=sha-${FULL_SHA}" >> $GITHUB_OUTPUT
           PR_TAG="${{ github.event.pull_request.number }}"
           if [ -n "${PR_TAG}" ]; then
             echo "pr_tag=pr-${PR_TAG}" >> $GITHUB_OUTPUT
@@ -1139,8 +1367,10 @@ jobs:
           cache-from: type=gha,scope=rocm-dev
           cache-to: type=gha,mode=max,scope=rocm-dev,oci-mediatypes=true,compression=zstd
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}-rocm-dev:${{ steps.set-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-rocm-dev:${{ steps.set-tag.outputs.short_tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-rocm-dev:${{ steps.set-tag.outputs.full_tag }}
             ${{ steps.set-tag.outputs.pr_tag != '' && format('{0}/{1}-rocm-dev:{2}', env.REGISTRY, github.repository, steps.set-tag.outputs.pr_tag) || '' }}
+            ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request' && format('{0}/{1}-rocm-dev:latest', env.REGISTRY, github.repository) || '' }}
           github-token: ${{ secrets.GHCR_TOKEN }}
         env:
           DOCKER_BUILDKIT: "1"
@@ -1149,7 +1379,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-rocm-dev:${{ steps.set-tag.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-rocm-dev:${{ steps.set-tag.outputs.short_tag }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -1201,25 +1431,45 @@ jobs:
       - name: Build and push the image
         id: build-and-push
         run: |
-          TAG="sha-$(git rev-parse --short HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          SHORT_TAG="sha-${SHORT_SHA}"
+          FULL_TAG="sha-${FULL_SHA}"
           PR_TAG="${{ github.event.pull_request.number }}"
           export DEVICE=hpu
           export DOCKERFILE=Dockerfile.hpu
-          export VERSION="${TAG}"
+
+          # Build and push with short SHA tag
+          export VERSION="${SHORT_TAG}"
           make image-build
           make image-push
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "short_tag=${SHORT_TAG}" >> $GITHUB_OUTPUT
+
+          # Retag and push with full SHA tag
+          export NEW_TAG="${FULL_TAG}"
+          make image-retag
+          VERSION="${NEW_TAG}" make image-push
+
+          # Handle PR tag if present
           if [ -n "${PR_TAG}" ]; then
             export NEW_TAG="pr-${PR_TAG}"
             make image-retag
             VERSION="${NEW_TAG}" make image-push
-            echo "pr_tag=pr-${PR_TAG}"  >> $GITHUB_OUTPUT
-          fi;
+            echo "pr_tag=pr-${PR_TAG}" >> $GITHUB_OUTPUT
+          fi
+
+          # Handle latest tag for default branch
+          if [ "${{ github.ref }}" = "refs/heads/${{ github.event.repository.default_branch }}" ] && \
+             [ "${{ github.event_name }}" != "pull_request" ]; then
+            export NEW_TAG="latest"
+            make image-retag
+            VERSION="${NEW_TAG}" make image-push
+          fi
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-hpu-dev:${{ steps.build-and-push.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-hpu-dev:${{ steps.build-and-push.outputs.short_tag }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -1272,8 +1522,10 @@ jobs:
       - name: Set image tag
         id: set-tag
         run: |
-          TAG="sha-$(git rev-parse --short HEAD)"
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          echo "short_tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_tag=sha-${FULL_SHA}" >> $GITHUB_OUTPUT
           PR_TAG="${{ github.event.pull_request.number }}"
           if [ -n "${PR_TAG}" ]; then
             echo "pr_tag=pr-${PR_TAG}" >> $GITHUB_OUTPUT
@@ -1298,7 +1550,8 @@ jobs:
           # cache-to: type=gha,mode=max,scope=cpu-dev,oci-mediatypes=true,compression=zstd
           build-args: CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}-cpu-dev:${{ steps.set-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-cpu-dev:${{ steps.set-tag.outputs.short_tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}-cpu-dev:${{ steps.set-tag.outputs.full_tag }}
             ${{ steps.set-tag.outputs.pr_tag != '' && format('{0}/{1}-cpu-dev:{2}', env.REGISTRY, github.repository, steps.set-tag.outputs.pr_tag) || '' }}
             ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request' && format('{0}/{1}-cpu-dev:latest', env.REGISTRY, github.repository) || '' }}
           github-token: ${{ secrets.GHCR_TOKEN }}
@@ -1309,7 +1562,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-cpu-dev:${{ steps.set-tag.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-cpu-dev:${{ steps.set-tag.outputs.short_tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
