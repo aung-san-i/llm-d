@@ -78,11 +78,6 @@ ARG VLLM_USE_PRECOMPILED=1
 # ============================================================================
 FROM nvcr.io/nvidia/cuda:${CUDA_MAJOR}.${CUDA_MINOR}.${CUDA_PATCH}-devel-${BUILD_BASE_IMAGE_SUFFIX} AS builder
 
-ARG CACHE_BUSTER
-RUN if [ -n "${CACHE_BUSTER}" ]; then \
-        echo "$CACHE_BUSTER" > /tmp/builder-buster; \
-    fi;
-
 ARG TARGETPLATFORM
 ARG TARGETOS
 ARG BUILD_BASE_IMAGE_SUFFIX
@@ -121,9 +116,10 @@ ENV LANG="C.UTF-8" \
     VIRTUAL_ENV="/opt/vllm" \
     CUDA_HOME="/usr/local/cuda"
 
-COPY docker/scripts/cuda/common/package-utils.sh /tmp/package-utils.sh
-COPY docker/packages /tmp/packages
-COPY docker/scripts/cuda/common/install-efa.sh /tmp/install-efa.sh
+COPY docker/scripts/cuda/common/package-utils.sh \
+     docker/scripts/cuda/common/install-efa.sh \
+     /tmp/
+COPY docker/packages/rpms/builder /tmp/packages/rpms/builder
 RUN EFA_MODE="builder" /tmp/install-efa.sh && \
     rm -f /tmp/install-efa.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
@@ -131,9 +127,11 @@ RUN EFA_MODE="builder" /tmp/install-efa.sh && \
 # Install base packages and EPEL in single layer
 # Note: DNF/YUM will automatically recognize RDMA packages already installed by EFA
 # and skip reinstallation, so no explicit filtering needed
-COPY docker/scripts/cuda/common/package-utils.sh /tmp/package-utils.sh
-COPY docker/packages /tmp/packages
-COPY docker/scripts/cuda/builder/install-base-packages.sh /tmp/install-base-packages.sh
+COPY docker/scripts/cuda/common/package-utils.sh \
+     docker/scripts/cuda/builder/install-base-packages.sh \
+     /tmp/
+COPY docker/packages/cuda/builder-packages.json /tmp/packages/cuda/
+COPY docker/packages/rpms/builder /tmp/packages/rpms/builder
 RUN --mount=type=cache,target=/var/cache/dnf \
     /tmp/install-base-packages.sh && \
     rm -f /tmp/install-base-packages.sh /tmp/package-utils.sh && \
@@ -293,11 +291,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ============================================================================
 FROM nvcr.io/nvidia/cuda:${CUDA_MAJOR}.${CUDA_MINOR}.${CUDA_PATCH}-devel-${FINAL_BASE_IMAGE_SUFFIX} AS runtime
 
-ARG CACHE_BUSTER
-RUN if [ -n "${CACHE_BUSTER}" ]; then \
-        echo "$CACHE_BUSTER" > /tmp/builder-buster; \
-    fi;
-
 ARG CUDA_MAJOR
 ARG CUDA_MINOR
 ARG CUDA_PATCH
@@ -343,17 +336,21 @@ ${LD_LIBRARY_PATH}" \
     CUDA_MINOR=${CUDA_MINOR}
 
 # Install runtime RDMA core packages through AWS EFA installer if EFA is enabled
-COPY docker/scripts/cuda/common/package-utils.sh /tmp/package-utils.sh
-COPY docker/packages /tmp/packages
-COPY docker/scripts/cuda/common/install-efa.sh /tmp/install-efa.sh
+COPY docker/scripts/cuda/common/package-utils.sh \
+     docker/scripts/cuda/common/install-efa.sh \
+     /tmp/
+COPY docker/packages/rpms/runtime /tmp/packages/rpms/runtime
 RUN EFA_MODE="runtime" /tmp/install-efa.sh && \
     rm -f /tmp/install-efa.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
 
 # Install runtime dependencies
-COPY docker/scripts/cuda/common/package-utils.sh /tmp/package-utils.sh
-COPY docker/packages /tmp/packages
-COPY docker/scripts/cuda/runtime/install-runtime-packages.sh /tmp/install-runtime-packages.sh
+COPY docker/scripts/cuda/common/package-utils.sh \
+     docker/scripts/cuda/runtime/install-runtime-packages.sh \
+     /tmp/
+COPY docker/packages/cuda/runtime-packages.json \
+     docker/packages/cuda/runtime-rdma-packages.json \
+     /tmp/packages/cuda/
 RUN /tmp/install-runtime-packages.sh && \
     rm -f /tmp/install-runtime-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages

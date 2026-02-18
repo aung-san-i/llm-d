@@ -197,11 +197,6 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Calculate Cache Bust Timestamp
-        id: cache_buster_timestamp
-        run: |
-          echo "cache_buster_timestamp=$(date)" >> $GITHUB_OUTPUT
-
       - name: Build and push debug image
         id: build-debug
         uses: docker/build-push-action@v6
@@ -213,7 +208,6 @@ jobs:
           provenance: false
           build-args: |
             BUILD_DEBUG=true
-            CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
             BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
@@ -328,11 +322,6 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Calculate Cache Bust Timestamp
-        id: cache_buster_timestamp
-        run: |
-          echo "cache_buster_timestamp=$(date)" >> $GITHUB_OUTPUT
-
       - name: Build the builder image layer
         id: build-image-build-layer
         uses: docker/build-push-action@v6
@@ -342,14 +331,12 @@ jobs:
           platforms: ${{ matrix.platform }}
           target: builder
           push: false
-          # disabling cache from cache to temporarily to prevent building issues
-          # cache-from: |
-          #   type=gha,mode=max,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
-          # cache-to: |
-          #   type=gha,mode=max,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }},oci-mediatypes=true,compression=zstd
+          cache-from: |
+            type=gha,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+          cache-to: |
+            type=gha,mode=max,scope=cuda-dev-builder-${{ matrix.os }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }},oci-mediatypes=true,compression=zstd
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
             BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
@@ -373,7 +360,6 @@ jobs:
           push: true
           provenance: false
           build-args: |
-            CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
             BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
@@ -382,13 +368,12 @@ jobs:
             ${{ inputs.vllm_commit_sha != '' && format('VLLM_COMMIT_SHA={0}', inputs.vllm_commit_sha) || '' }}
             ${{ inputs.vllm_precompiled_wheel_commit != '' &&
               format('VLLM_PRECOMPILED_WHEEL_COMMIT={0}', inputs.vllm_precompiled_wheel_commit) || '' }}
-          # disabling cache from cache to temporarily to prevent building issues
-          # cache-from: >-
-          #   type=gha,scope=cuda-dev-${{ matrix.os }}-${{
-          #   matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
-          # cache-to: >-
-          #   type=gha,mode=max,scope=cuda-dev-${{ matrix.os }}-${{
-          #   matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+          cache-from: >-
+            type=gha,scope=cuda-dev-${{ matrix.os }}-${{
+            matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+          cache-to: >-
+            type=gha,mode=max,scope=cuda-dev-${{ matrix.os }}-${{
+            matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: >-
             type=image,name=${{ env.REGISTRY }}/${{ github.repository }}-cuda-dev${{ matrix.image_suffix }},
