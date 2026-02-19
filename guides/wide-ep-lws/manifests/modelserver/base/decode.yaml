@@ -12,7 +12,7 @@ metadata:
 spec:
   replicas: 1
   leaderWorkerTemplate:
-    size: 1
+    size: 2
     workerTemplate:
       metadata:
         labels:
@@ -87,7 +87,6 @@ spec:
                   deepseek-ai/DeepSeek-R1-0528 \
                   --port 8200 \
                   --trust-remote-code \
-                  --enable-log-requests \
                   --disable-uvicorn-access-log \
                   --data-parallel-hybrid-lb \
                   --enable-expert-parallel \
@@ -113,6 +112,8 @@ spec:
               # Has no effect when VLLM_ALL2ALL_BACKEND=deepep_high_throughput.
               - name: VLLM_MOE_DP_CHUNK_SIZE
                 value: "384"  # vLLM default is 256
+              - name: NVSHMEM_HCA_LIST
+                value: "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1"
               - name: DP_SIZE_LOCAL
                 value: "8"
               - name: TP_SIZE

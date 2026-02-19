@@ -10,7 +10,7 @@ metadata:
     llm-d.ai/model: DeepSeek-R1-0528
     llm-d.ai/role: prefill
 spec:
-  replicas: 1
+  replicas: 2
   leaderWorkerTemplate:
     size: 1
     workerTemplate:
@@ -88,6 +88,8 @@ spec:
             env:
               - name: DP_SIZE_LOCAL
                 value: "8"
+              - name: NVSHMEM_HCA_LIST
+                value: "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1"
               - name: TP_SIZE
                 value: "1"
               - name: TRITON_LIBCUDA_PATH
