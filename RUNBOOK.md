@@ -226,7 +226,7 @@ cd docs/monitoring
 kubectl port-forward -n llm-d-monitoring svc/llmd-grafana 3000:80
 ```
 
-# Deploy WideEP
+# Deploy DP/EP Single Node
 
 - install LWS CRDs
 
@@ -263,8 +263,12 @@ kubectl apply -k guides/recipes/gateway/istio
 - run benchmark
 
 ```bash
-
+./run-bench.sh
 ```
+
+--- single node: `275c4e794ab75d355261fe29ba1573743eebbe14`
+
+# Deploy DP/EP Multi Node
 
 
 
