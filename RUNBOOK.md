@@ -106,7 +106,7 @@ ulimit -l
 >> ulimited
 ```
 
-On some nodes, sometimes (on the same nodes sometimes It works), Im getting:
+- On some nodes, sometimes (on the same nodes sometimes It works), Im getting:
 ```bash
 (APIServer pid=1) (EngineCore_DP0 pid=195) INFO 02-19 02:03:16 [nixl_connector.py:813] Initializing NIXL wrapper
 (APIServer pid=1) (EngineCore_DP0 pid=195) INFO 02-19 02:03:16 [nixl_connector.py:814] Initializing NIXL worker 5da9310e-f1ed-46cb-b5dd-fd54d95d400e
@@ -114,12 +114,11 @@ On some nodes, sometimes (on the same nodes sometimes It works), Im getting:
 [1771466599.213651] [ms-pd-llm-d-modelservice-prefill-dd4c9c94c-p4njb:195  :0]          parser.c:2359 UCX  WARN  (set UCX_WARN_UNUSED_ENV_VARS=n to suppress this warning)
 [1771466605.147536] [ms-pd-llm-d-modelservice-prefill-dd4c9c94c-p4njb:195  :1]       ib_device.c:1385 UCX  ERROR   ibv_create_ah(dlid=49152 sl=0 port=1 src_path_bits=0 dgid=fe80::9876:34ff:fee9:b3fc flow_label=0xffffffff sgid_index=0 traffic_class=0) for RC DEVX QP connect on mlx5_12 failed: No such device
 ```
-So I set:
+
+- So I set (this gave me all valid nics)
 ```
 UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1
 ```
-
-- this ended up giving me all valid NICS
 
 
 - deploy with these env vars
