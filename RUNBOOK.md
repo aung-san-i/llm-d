@@ -213,4 +213,59 @@ result
         "p99": 39.2887882678109,
         "p99.9": 40.169823912800226
       },
+    }
 ```
+
+# Deploy Monitoring Stack
+
+```bash
+cd docs/monitoring
+./scripts/install-prometheus-grafana.sh --enable-tls
+
+# Port forward it
+kubectl port-forward -n llm-d-monitoring svc/llmd-grafana 3000:80
+```
+
+# Deploy WideEP
+
+- install LWS CRDs
+
+```bash
+VERSION=v0.8.0
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/lws/releases/download/$VERSION/manifests.yaml
+```
+
+- deploy
+```bash
+cd guides/wide-ep-lws
+kubectl apply -k ./manifests/modelserver/nebius  -n ${NAMESPACE}
+```
+
+- had a variety of issues with the vllm jit cache in the hostpath (I think premissions). I had to go back and set it to a local directory (in /tmp). Need to figure out a way to have this work better so we can persist it.
+
+- deploy inferencepool
+
+```bash
+helm install llm-d-infpool \
+  -n ${NAMESPACE} \
+  -f ./manifests/inferencepool.values.yaml \
+  --set "provider.name=istio" \
+  oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool \
+  --version v1.3.0
+```
+
+- deploy gateway + httproute
+
+```bash
+kubectl apply -k guides/recipes/gateway/istio
+```
+
+- run benchmark
+
+```bash
+
+```
+
+
+
+
