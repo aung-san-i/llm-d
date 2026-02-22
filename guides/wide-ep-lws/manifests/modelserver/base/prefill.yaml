@@ -83,7 +83,9 @@ spec:
                                           "kv_role":"kv_both",
                                           "kv_load_failure_policy":"fail"}' \
                   --async-scheduling \
-                  --gpu-memory-utilization 0.75
+                  --gpu-memory-utilization 0.9 \
+                  --speculative-config '{"method": "deepseek_mtp", "num_speculative_tokens": 1}' \
+                  --attention-backend FLASHINFER_MLA
 
             env:
               - name: DP_SIZE_LOCAL

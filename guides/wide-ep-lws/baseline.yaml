@@ -65,7 +65,7 @@ spec:
 
               exec vllm serve \
                 deepseek-ai/DeepSeek-R1-0528 \
-                --port 8200 \
+                --port 8000 \
                 --trust-remote-code \
                 --tensor-parallel-size 8
           env:

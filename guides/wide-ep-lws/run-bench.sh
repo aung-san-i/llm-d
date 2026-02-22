@@ -5,10 +5,10 @@
 # ==============================================================================
 NAMESPACE="${NAMESPACE:-llm-d-nebius}"
 GATEWAY_NAME="${GATEWAY_NAME:-llm-d-inference-gateway}"
-BENCHMARK_DIR="${BENCHMARK_DIR:-./bench-single-node-test}"
-OUTPUT_DIR="${OUTPUT_DIR:-./bench-single-node-test-results}"
-# RAW_IP="${RAW_IP:-10.144.2.72}"
-RAW_PORT="${RAW_PORT:-80}"
+BENCHMARK_DIR="${BENCHMARK_DIR:-./bench-dp-ep-multi-node-test}"
+OUTPUT_DIR="${OUTPUT_DIR:-./bench-dp-ep-multi-node-test-results}"
+# RAW_IP="${RAW_IP:-10.145.217.87}"
+# RAW_PORT="${RAW_PORT:-80}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -38,6 +38,7 @@ echo -e "\n--- Checking Gateway ---"
 
 if [ -z "$RAW_IP" ]; then
   RAW_IP=$(kubectl get gateway "$GATEWAY_NAME" -n "${NAMESPACE}" -o jsonpath='{.status.addresses[0].value}' 2>/dev/null)
+  RAW_PORT=80
 fi
 
 if [ -z "$RAW_IP" ]; then
@@ -121,6 +122,8 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 echo "Copying report from ${POD}:${REPORT_DIR} to ${OUTPUT_DIR}..."
+
+kubectl exec "${POD}" -n "${NAMESPACE}" -- /bin/sh -c "cat ${REPORT_DIR}/summary_lifecycle_metrics.json"
 
 if kubectl cp "${NAMESPACE}/${POD}:${REPORT_DIR}" "$OUTPUT_DIR"; then
     echo -e "${GREEN}Results successfully copied to ${OUTPUT_DIR}${NC}"

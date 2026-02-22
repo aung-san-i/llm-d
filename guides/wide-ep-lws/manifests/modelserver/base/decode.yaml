@@ -99,7 +99,16 @@ spec:
                   --gpu-memory-utilization 0.8 \
                   --kv_transfer_config '{"kv_connector":"NixlConnector",
                                           "kv_role":"kv_both",
-                                          "kv_load_failure_policy":"fail"}'
+                                          "kv_load_failure_policy":"fail"}' \
+                  --speculative-config '{"method": "deepseek_mtp", "num_speculative_tokens": 1}' \
+                  --attention-backend FLASHINFER_MLA \
+                  --profiler_config '{"profiler":"torch", 
+                                      "torch_profiler_dir":"/home/vllm/profiles",
+                                      "torch_profiler_with_stack":true,
+                                      "delay_iterations":0,
+                                      "max_iterations":10,
+                                      "ignore_frontend":true}'
+                  
             env:
               # VLLM_MOE_DP_CHUNK_SIZE is a tunable parameter.
               # Higher values increase the memory footprint of the hidden states in the MoE layers,
