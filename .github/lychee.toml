@@ -13,7 +13,8 @@ exclude = [
   "^https://github\\.com/.*/blob/.*#L[0-9]",
   # Local file references with line numbers cannot be verified by lychee
   "^file://.*:[0-9]",
-
+  # SSL certificate verification fails in GitHub CI runners (works fine locally)
+  "sky\\.cs\\.berkeley\\.edu",
 ]
 
 # Only fail on 404 (Not Found) — the only status code that definitively means
