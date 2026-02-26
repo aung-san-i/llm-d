@@ -65,6 +65,7 @@ decode:
           cpu: "16"
           # note: GPU resources get controlled by parallelism + accelerators above
           rdma/ib: 1
+      mountModelVolume: true
       volumeMounts:
         - name: metrics-volume
           mountPath: /.config
@@ -187,11 +188,5 @@ prefill:
       emptyDir:
         medium: Memory
         sizeLimit: "16Gi"
-    - name: vllm-cache
-      hostPath:
-        path: /mnt/filesystem-x7/vllm-cache
-        type: DirectoryOrCreate
-    - name: hf-cache
-      hostPath:
-        path: /mnt/filesystem-x7/hf-cache
-        type: DirectoryOrCreate
+    - name: torch-compile-cache
+      emptyDir: {}
