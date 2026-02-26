@@ -61,7 +61,7 @@ ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
 ARG VLLM_COMMIT_SHA="v0.16.0"
 ARG VLLM_PRECOMPILED_WHEEL_COMMIT="v0.16.0"
 ARG VLLM_PREBUILT=0
-ARG VLLM_USE_PRECOMPILED=1
+ARG VLLM_USE_PRECOMPILED=0
 
 # ============================================================================
 # BUILD STAGE - Install build dependencies and create wheels
