@@ -174,9 +174,11 @@ spec:
               failureThreshold: 3
             resources:
               limits:
+                ephemeral-storage: 1Ti
                 memory: 512Gi
                 nvidia.com/gpu: "8"
               requests:
+                ephemeral-storage: 1Ti
                 cpu: 32
                 memory: 512Gi
                 nvidia.com/gpu: "8"
