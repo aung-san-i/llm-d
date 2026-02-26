@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+  - pod-monitors.yaml
+
+patches:
+  - target:
+      kind: LeaderWorkerSet
+    patch: |-
+      # Replace volumes for provider-specific hostPath
+      - op: replace
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/volumes/1
+        value:
+          name: hf-cache
+          hostPath:
+            path: /mnt/filesystem-x7/vllm-cache
+            type: DirectoryOrCreate
+
+      - op: replace
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/volumes/2
+        value:
+          name: jit-cache
+          hostPath:
+            path: /mnt/filesystem-x7/vllm-cache
+            type: DirectoryOrCreate
+
+      # Nebius mlx5_12:1 is a virtual NIC for frontend traffic, hide to remove crashes
+      - op: add
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/containers/0/env/-
+        value:
+          name: UCX_NET_DEVICES
+          value: "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1"
+      - op: add
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/containers/0/env/-
+        value:
+          name: NVSHMEM_HCA_LIST
+          value: "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1"
+      
+      # Nebius VMs do not have the ephemeral storage capacity to support the default request
+      - op: remove
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/containers/0/resources/requests/ephemeral-storage
+      - op: remove
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/containers/0/resources/limits/ephemeral-storage
