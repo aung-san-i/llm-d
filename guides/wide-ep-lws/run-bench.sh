@@ -5,8 +5,8 @@
 # ==============================================================================
 NAMESPACE="${NAMESPACE:-llm-d-nebius}"
 GATEWAY_NAME="${GATEWAY_NAME:-llm-d-inference-gateway}"
-BENCHMARK_DIR="${BENCHMARK_DIR:-./long-context}"
-OUTPUT_DIR="${OUTPUT_DIR:-./long-context-wide-ep}"
+BENCHMARK_DIR="${BENCHMARK_DIR:-./batch}"
+OUTPUT_DIR="${OUTPUT_DIR:-./batch-wide-ep}"
 # RAW_IP="${RAW_IP:-10.145.217.87}"
 # RAW_PORT="${RAW_PORT:-80}"
 
