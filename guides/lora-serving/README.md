@@ -29,7 +29,7 @@ llm-d combines vLLM's multi-LoRA serving with Gateway API-based routing to provi
                         └──────────────────────────────────────────┘
 ```
 
-Clients select an adapter by setting the `model` field in OpenAI-compatible API requests. The Gateway routes the request to the InferencePool, which forwards it to a vLLM instance serving that adapter.
+Clients select an adapter by setting the `model` field in OpenAI-compatible API requests. The Gateway routes the request to the InferencePool, which forwards it to a vLLM instance serving that adapter. No alternative HTTPRoute rules necessary.
 
 ## Prerequisites
 
@@ -38,15 +38,13 @@ Clients select an adapter by setting the `model` field in OpenAI-compatible API 
 * Ensure your cluster infrastructure is sufficient to [deploy high scale inference](../prereq/infrastructure/README.md).
 * Configure and deploy your [Gateway control plane](../prereq/gateway-provider/README.md).
 * Have the [Monitoring stack](../../docs/monitoring/README.md) installed on your system.
-* Create a namespace for installation.
 
   ```bash
-  export NAMESPACE=llm-d-lora # or any other namespace (shorter names recommended)
+  export NAMESPACE=llm-d-lora # or any other namespace
   kubectl create namespace ${NAMESPACE}
   ```
 
 * [Create the `llm-d-hf-token` secret in your target namespace with the key `HF_TOKEN` matching a valid HuggingFace token](../prereq/client-setup/README.md#huggingface-token) to pull models.
-* [Choose an llm-d version](../prereq/client-setup/README.md#llm-d-version)
 
 ## Deploy Base Model with LoRA Support
 
@@ -81,9 +79,13 @@ This deploys:
 <!-- TAB:Runtime-Loaded -->
 ### Runtime-Loaded Adapters
 
-Deploy the Gateway, vLLM (with no preloaded adapters), and InferencePool:
+Deploy the Gateway, vLLM (with no preloaded adapters), and InferencePool. Either edit the kustomize file to reference the `runtime-loaded` dir instead of `preloaded` by default or apply the resources one at a time:
 
 ```bash
+# If modified kustomize file:
+kustomize build --enable-helm . | kubectl apply -n ${NAMESPACE} -f -
+
+# Else apply one at a time
 kubectl apply -k ./gateway -n ${NAMESPACE}
 kubectl apply -k ./vllm/overlays/runtime-loaded -n ${NAMESPACE}
 helm install llm-d-infpool \
@@ -111,7 +113,7 @@ You should see output similar to the following, with the `PROGRAMMED` status as 
 
 ```text
 NAME                      CLASS                              ADDRESS     PROGRAMMED   AGE
-llm-d-inference-gateway   gke-l7-regional-external-managed   <redacted>  True         16m
+llm-d-inference-gateway   istio                              <redacted>  True         16m
 ```
 
 ### Check the HTTPRoute
@@ -145,9 +147,13 @@ kubectl get pods -n ${NAMESPACE}
 You should see the InferencePool's endpoint pod and the model server pod in a `Running` state.
 
 ```text
-NAME                                  READY   STATUS    RESTARTS   AGE
-llm-d-infpool-epp-xxxxxxxx-xxxxx     1/1     Running   0          16m
-llm-d-model-server-xxxxxxxx-xxxxx    1/1     Running   0          11m
+NAME                                             READY   STATUS    RESTARTS   AGE
+llm-d-inference-gateway-istio-574cb68d9c-pnlc5   1/1     Running   0          7m
+llm-d-infpool-epp-7684f79497-bkl88               1/1     Running   0          7m
+llm-d-model-server-848bd89c4f-5vwt5              1/1     Running   0          5m27s
+llm-d-model-server-848bd89c4f-tzckb              1/1     Running   0          7m
+llm-d-model-server-848bd89c4f-wvfgb              1/1     Running   0          5m27s
+llm-d-model-server-848bd89c4f-xx7wr              1/1     Running   0          5m27s
 ```
 
 ### Verify Loaded Adapters
@@ -157,7 +163,7 @@ Once the model server pod is running, verify the available models (including ada
 ```bash
 export MODEL_POD=$(kubectl get pods -n ${NAMESPACE} -l llm-d.ai/inference-serving=true -o jsonpath='{.items[0].metadata.name}')
 kubectl port-forward -n ${NAMESPACE} ${MODEL_POD} 8000:8000 &
-curl -s http://localhost:8000/v1/models | python3 -m json.tool
+curl -s http://localhost:8000/v1/models | jq '{data: [.data[] | {id, object}]}'
 ```
 
 For the **preloaded** configuration, you should see the base model and all three adapters:
@@ -190,7 +196,7 @@ curl -s ${GATEWAY_IP}/v1/chat/completions \
     "model": "meta-llama/Llama-3.1-8B-Instruct",
     "messages": [{"role": "user", "content": "What is machine learning?"}],
     "max_tokens": 100
-  }'
+  }' | jq
 ```
 
 ### Query a LoRA Adapter
@@ -204,7 +210,7 @@ curl -s ${GATEWAY_IP}/v1/chat/completions \
     "model": "finance",
     "messages": [{"role": "user", "content": "Predict the stock trend for AAPL next week."}],
     "max_tokens": 100
-  }'
+  }' | jq
 ```
 
 ```bash
