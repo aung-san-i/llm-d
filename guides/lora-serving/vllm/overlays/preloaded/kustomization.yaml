@@ -21,18 +21,7 @@ patches:
             meta-llama/Llama-3.1-8B-Instruct \
             --port 8000 \
             --enable-lora \
-            --lora-modules sql-lora=FinGPT/fingpt-forecaster_llama3-8b_lora sentiment-lora=FinGPT/fingpt-sentiment_llama3-8b_lora \
+            --lora-modules topic-control=nvidia/llama-3.1-nemoguard-8b-topic-control fact-generation=algoprog/fact-generation-llama-3.1-8b-instruct-lora finance=k0xff/llama-3-8b-sujet-finance-lora \
             --max-loras 3 \
             --max-lora-rank 64 \
             --max-cpu-loras 5
-  - target:
-      kind: Deployment
-      name: llm-d-model-server
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/resources
-        value:
-          limits:
-            nvidia.com/gpu: 1
-          requests:
-            nvidia.com/gpu: 1

@@ -33,14 +33,3 @@ patches:
         value:
           name: VLLM_ALLOW_RUNTIME_LORA_UPDATING
           value: "True"
-  - target:
-      kind: Deployment
-      name: llm-d-model-server
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/resources
-        value:
-          limits:
-            nvidia.com/gpu: 1
-          requests:
-            nvidia.com/gpu: 1

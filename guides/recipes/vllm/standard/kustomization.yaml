@@ -6,7 +6,7 @@ resources:
 images:
   - name: INFERENCE_SERVER_IMAGE
     newName: ghcr.io/llm-d/llm-d-cuda-dev
-    newTag: sha-5a98b4f
+    newTag: latest
 
 patches:
   - patch: |-
@@ -20,3 +20,11 @@ patches:
             labels:
               llm-d.ai/hardware-variant: "gpu"
               llm-d.ai/accelerator-vendor: "nvidia"
+          spec:
+            containers:
+              - name: vllm
+                resources:
+                  limits:
+                    nvidia.com/gpu: 1
+                  requests:
+                    nvidia.com/gpu: 1

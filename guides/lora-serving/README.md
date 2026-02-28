@@ -54,17 +54,7 @@ Clients select an adapter by setting the `model` field in OpenAI-compatible API 
 cd guides/lora-serving
 ```
 
-### Deploy Gateway and HTTPRoute
-
-Deploy the Gateway and HTTPRoute. This extends the [Istio gateway recipe](../recipes/gateway/istio) with a single HTTPRoute that sends all traffic to the InferencePool.
-
-```bash
-kubectl apply -k ./gateway -n ${NAMESPACE}
-```
-
-### Deploy vLLM Model Server
-
-This guide provides two modes of LoRA serving. Choose the one that fits your use case:
+This guide provides two modes of LoRA serving:
 
 - **Preloaded** — Adapters are specified at startup and always available. Best for stable, known workloads.
 - **Runtime-Loaded** — Adapters are loaded and unloaded dynamically via API. Best for experimentation or multi-tenant platforms.
@@ -72,81 +62,38 @@ This guide provides two modes of LoRA serving. Choose the one that fits your use
 <!-- TABS:START -->
 
 <!-- TAB:Preloaded:default -->
-#### Preloaded Adapters
+### Preloaded Adapters
 
-Deploy the vLLM model server with LoRA adapters specified at startup. The adapters will be downloaded and loaded when the pod starts.
+Deploy the full stack (Gateway, HTTPRoute, vLLM with preloaded adapters, and InferencePool) in a single command:
 
 ```bash
-kubectl apply -k ./vllm/overlays/preloaded -n ${NAMESPACE}
+kustomize build --enable-helm . | kubectl apply -n ${NAMESPACE} -f -
 ```
 
-This configuration preloads two adapters on `meta-llama/Llama-3.1-8B-Instruct`:
-- `sql-lora` — `FinGPT/fingpt-forecaster_llama3-8b_lora`
-- `sentiment-lora` — `FinGPT/fingpt-sentiment_llama3-8b_lora`
+This deploys:
+- An [Istio Gateway](../recipes/gateway/istio) with an HTTPRoute routing all traffic to the InferencePool
+- A vLLM model server on `meta-llama/Llama-3.1-8B-Instruct` with three preloaded adapters:
+  - `topic-control` — `nvidia/llama-3.1-nemoguard-8b-topic-control`
+  - `fact-generation` — `algoprog/fact-generation-llama-3.1-8b-instruct-lora`
+  - `finance` — `k0xff/llama-3-8b-sujet-finance-lora`
+- An InferencePool with the [GIE endpoint picker](https://github.com/kubernetes-sigs/gateway-api-inference-extension)
 
 <!-- TAB:Runtime-Loaded -->
-#### Runtime-Loaded Adapters
+### Runtime-Loaded Adapters
 
-Deploy the vLLM model server with LoRA enabled but no adapters preloaded. Adapters are loaded dynamically via the vLLM API.
+Deploy the Gateway, vLLM (with no preloaded adapters), and InferencePool:
 
 ```bash
+kubectl apply -k ./gateway -n ${NAMESPACE}
 kubectl apply -k ./vllm/overlays/runtime-loaded -n ${NAMESPACE}
-```
-
-This configuration sets `VLLM_ALLOW_RUNTIME_LORA_UPDATING=True`, which enables the `/v1/load_lora_adapter` and `/v1/unload_lora_adapter` API endpoints.
-
-<!-- TABS:END -->
-
-### Deploy InferencePool
-
-To deploy the `InferencePool`, select your provider below.
-
-<!-- TABS:START -->
-
-<!-- TAB:GKE:default -->
-
-#### GKE
-
-This command deploys the `InferencePool` on GKE with GKE-specific monitoring enabled.
-
-```bash
 helm install llm-d-infpool \
     -n ${NAMESPACE} \
     -f ../recipes/inferencepool/values.yaml \
-    --set "provider.name=gke" \
     oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool \
     --version v1.3.0
 ```
 
-<!-- TAB:Istio -->
-
-#### Istio
-
-This command deploys the `InferencePool` with Istio, enabling Prometheus monitoring.
-
-```bash
-helm install llm-d-infpool \
-    -n ${NAMESPACE} \
-    -f ../recipes/inferencepool/values.yaml \
-    --set "provider.name=istio" \
-    oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool \
-    --version v1.3.0
-```
-
-<!-- TAB:Kgateway -->
-
-#### Kgateway
-
-This command deploys the `InferencePool` with Kgateway.
-
-```bash
-helm install llm-d-infpool \
-    -n ${NAMESPACE} \
-    -f ../recipes/inferencepool/values.yaml \
-    --set "provider.name=kgateway" \
-    oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool \
-    --version v1.3.0
-```
+This configuration sets `VLLM_ALLOW_RUNTIME_LORA_UPDATING=True`, which enables the `/v1/load_lora_adapter` and `/v1/unload_lora_adapter` API endpoints. See [Runtime-Loaded LoRA Mode](#runtime-loaded-lora-mode) for how to register adapters after deployment.
 
 <!-- TABS:END -->
 
@@ -213,14 +160,15 @@ kubectl port-forward -n ${NAMESPACE} ${MODEL_POD} 8000:8000 &
 curl -s http://localhost:8000/v1/models | python3 -m json.tool
 ```
 
-For the **preloaded** configuration, you should see the base model and both adapters:
+For the **preloaded** configuration, you should see the base model and all three adapters:
 
 ```json
 {
     "data": [
         {"id": "meta-llama/Llama-3.1-8B-Instruct", "object": "model"},
-        {"id": "sql-lora", "object": "model"},
-        {"id": "sentiment-lora", "object": "model"}
+        {"id": "topic-control", "object": "model"},
+        {"id": "fact-generation", "object": "model"},
+        {"id": "finance", "object": "model"}
     ]
 }
 ```
@@ -253,7 +201,7 @@ To route a request to a specific adapter, set the `model` field to the adapter n
 curl -s ${GATEWAY_IP}/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "sql-lora",
+    "model": "finance",
     "messages": [{"role": "user", "content": "Predict the stock trend for AAPL next week."}],
     "max_tokens": 100
   }'
@@ -263,8 +211,8 @@ curl -s ${GATEWAY_IP}/v1/chat/completions \
 curl -s ${GATEWAY_IP}/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "sentiment-lora",
-    "messages": [{"role": "user", "content": "Analyze the sentiment: The company reported record earnings and raised guidance for the next quarter."}],
+    "model": "topic-control",
+    "messages": [{"role": "user", "content": "What topics are appropriate for a customer support chatbot?"}],
     "max_tokens": 100
   }'
 ```
@@ -480,33 +428,23 @@ For runtime-loaded mode with multiple replicas, consider using a DaemonSet-style
 
 ## Cleanup
 
-To remove the deployment:
-
-```bash
-helm uninstall llm-d-infpool -n ${NAMESPACE}
-```
-
 <!-- TABS:START -->
 
 <!-- TAB:Preloaded:default -->
 
 ```bash
-kubectl delete -k ./vllm/overlays/preloaded -n ${NAMESPACE}
+kustomize build --enable-helm . | kubectl delete -n ${NAMESPACE} -f -
 ```
 
 <!-- TAB:Runtime-Loaded -->
 
 ```bash
+helm uninstall llm-d-infpool -n ${NAMESPACE}
 kubectl delete -k ./vllm/overlays/runtime-loaded -n ${NAMESPACE}
+kubectl delete -k ./gateway -n ${NAMESPACE}
 ```
 
 <!-- TABS:END -->
-
-Delete the Gateway and HTTPRoute:
-
-```bash
-kubectl delete -k ./gateway -n ${NAMESPACE}
-```
 
 Delete any custom HTTPRoutes created for routing:
 
