@@ -1,16 +1,16 @@
 multinode: false
 
 modelArtifacts:
-  uri: "hf://Qwen/Qwen3-32B"
-  name: "Qwen/Qwen3-32B"
-  size: 80Gi
+  uri: "hf://Qwen/Qwen3-4B"
+  name: "Qwen/Qwen3-4B"
+  size: 20Gi
   authSecretName: "llm-d-hf-token"
   labels:
     llm-d.ai/inference-serving: "true"
     llm-d.ai/guide: "inference-scheduling"
     llm-d.ai/accelerator-variant: "gpu"
     llm-d.ai/accelerator-vendor: "nvidia"
-    llm-d.ai/model: "Qwen3-32B"
+    llm-d.ai/model: "Qwen3-4B"
 
 routing:
   proxy:
@@ -23,22 +23,25 @@ accelerator:  # controls specialized hardware Type
 decode:
   create: true
   parallelism:
-    tensor: 2
+    tensor: 1
     data: 1
-  replicas: 8
+  replicas: 2
   monitoring:
     podmonitor:
       enabled: true
       portName: "vllm"  # decode vLLM service port (from routing.proxy.targetPort)
       path: "/metrics"
-      interval: "30s"
+      interval: "5s"
   containers:
     - name: "vllm"
-      image: ghcr.io/llm-d/llm-d-cuda:v0.5.0
+      image: ghcr.io/llm-d/llm-d-cuda-dev:sha-4f5cdd5
       modelCommand: vllmServe
       args:
+        - "--served-model-name=base-model"
         - "--disable-uvicorn-access-log"
-        - "--gpu-memory-utilization=0.95"
+        - "--enable-lora"
+        - "--lora-modules"
+        - "lora-model=tahamajs/Qwen3-4b-gsm8k-Qlora-GRPO"
         # - "--tensor-parallel-size=2" # added automatically from 'parallelism'
       ports:
         - containerPort: 8000

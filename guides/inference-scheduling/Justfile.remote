@@ -1,0 +1,20 @@
+# Justfile.remote
+# Run lm-eval GSM8K against in-cluster gateway
+
+NAMESPACE := "rob-dev"
+GATEWAY := "infra-inference-scheduling-inference-gateway-istio.rob-dev.svc.cluster.local"
+PORT := "80"
+
+TASK := "gsm8k"
+
+eval MODEL LIMIT CONCURRENCY:
+    lm_eval \
+        --model local-completions \
+        --model_args base_url=http://{{GATEWAY}}:{{PORT}}/v1/completions,model={{MODEL}},num_concurrent={{CONCURRENCY}},tokenizer=Qwen/Qwen3-8B,num_retries=0,tokenized_requests=False \
+        --tasks {{TASK}} \
+        --limit {{LIMIT}}
+
+curl MODEL:
+    curl -vvv http://{{GATEWAY}}:{{PORT}}/v1/completions \
+      -H "Content-Type: application/json" \
+      -d '{"model": "{{MODEL}}", "prompt": "What is the meaning of life?","max_tokens": 64, "temperature": 0}'

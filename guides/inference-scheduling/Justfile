@@ -1,0 +1,10 @@
+# justfile
+
+NAMESPACE := "rob-dev"
+POD := "sleep-uv"
+SRC := "Justfile.remote"
+SHELL := "/bin/bash"
+
+exec-bench:
+    kubectl cp {{SRC}} {{NAMESPACE}}/{{POD}}:/Justfile
+    kubectl exec -it -n {{NAMESPACE}} {{POD}} -- {{SHELL}}

@@ -17,7 +17,25 @@ inferenceExtension:
     ###################
     pullPolicy: Always
   extProcPort: 9002
-  pluginsConfigFile: "default-plugins.yaml"
+  pluginsConfigFile: "my-config.yaml"
+  pluginsCustomConfig:
+    my-config.yaml: |
+      apiVersion: inference.networking.x-k8s.io/v1alpha1
+      kind: EndpointPickerConfig
+      plugins:
+        - type: single-profile-handler
+        - type: queue-scorer
+        - type: active-request-scorer
+        - type: prefix-cache-scorer
+      schedulingProfiles:
+        - name: default
+          plugins:
+            - pluginRef: prefix-cache-scorer
+              weight: 3.0
+            - pluginRef: active-request-scorer
+              weight: 2.0
+            - pluginRef: queue-scorer
+              weight: 2.0
   monitoring:
     interval: "10s"
     # Prometheus ServiceMonitor will be created when enabled for EPP metrics collection
