@@ -22,7 +22,7 @@ ARG TARGETPLATFORM=linux/amd64
 ARG BASE_IMAGE_SUFFIX=ubi9
 ARG PYTHON_VERSION=3.12
 
-ARG USE_SCCACHE=true
+ARG USE_SCCACHE=false
 ARG BUILD_DEBUG=false
 
 ######################## COMPONENT VERSIONS ########################
@@ -56,7 +56,7 @@ ARG LMCACHE_VERSION="v0.3.14"
 
 # Kernels
 # NM fork of Deepep for duplicate nvshmem IBGDA definitions, see: https://github.com/deepseek-ai/DeepEP/pull/581.
-# Also GKE nic-pe mapping, see: https://github.com/deepseek-ai/DeepEP/pull/466 
+# Also GKE nic-pe mapping, see: https://github.com/deepseek-ai/DeepEP/pull/466
 # Commits cherry-picked on top of: `https://github.com/deepseek-ai/DeepEP/commit/567632dd59810d77b3cc05553df953cc0f779799`
 ARG DEEPEP_REPO="https://github.com/neuralmagic/DeepEP"
 # branch: https://github.com/neuralmagic/DeepEP/tree/llm-d-release-v0.5.1, but frozen at commit:
