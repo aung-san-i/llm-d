@@ -52,7 +52,7 @@ llm-d accelerates distributed inference by integrating industry-standard open te
   </picture>
 </p>
 
- llm-d adds:
+### llm-d adds:
 
 - [**Model Server Optimizations in vLLM:**](https://github.com/vllm-project/vllm) The llm-d team contributes and maintains high performance distributed serving optimizations in upstream vLLM, including disaggregated serving, KV connector interfaces, support for frontier OSS mixture of experts models, and production-ready observability and resiliency. 
 
