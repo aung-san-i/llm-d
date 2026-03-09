@@ -42,32 +42,95 @@ def find_nixl_wheel_in_cache(cache_dir):
     return None
 
 
+def detect_distro():
+    """Detect if running on a Red Hat derivative or Debian derivative."""
+    if os.path.exists('/etc/redhat-release'):
+        return 'rhel'
+    if os.path.exists('/etc/os-release'):
+        with open('/etc/os-release') as f:
+            content = f.read().lower()
+            for keyword in ('rhel', 'redhat', 'centos', 'fedora', 'rocky', 'alma', 'ubi'):
+                if keyword in content:
+                    return 'rhel'
+    return 'debian'
+
+
+def get_package_manager():
+    """Return the appropriate package manager command for the distro."""
+    for cmd in ['dnf', 'yum']:
+        if subprocess.run(['which', cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            return cmd
+    return None
+
+
 def install_system_dependencies():
-    """Installs required system packages using apt-get if run as root."""
+    """Installs required system packages using dnf/yum for RHEL or apt-get for Debian."""
     if os.geteuid() != 0:
         print("\n---", flush=True)
         print("WARNING: Not running as root. Skipping system dependency installation.", flush=True)
-        print("Please ensure the following packages are installed on your system:", flush=True)
-        print("  patchelf build-essential git cmake ninja-build autotools-dev automake meson libtool libtool-bin",
-              flush=True)
+        print("Please ensure the required build packages are installed on your system.", flush=True)
         print("---\n", flush=True)
         return
 
-    print("--- Running as root. Installing system dependencies... ---", flush=True)
-    apt_packages = [
-        "patchelf",  # <-- Add patchelf here
-        "build-essential",
-        "git",
-        "cmake",
-        "ninja-build",
-        "autotools-dev",
-        "automake",
-        "meson",
-        "libtool",
-        "libtool-bin"
-    ]
-    run_command(['apt-get', 'update'])
-    run_command(['apt-get', 'install', '-y'] + apt_packages)
+    distro = detect_distro()
+    print(f"--- Running as root. Detected distro family: {distro}. Installing system dependencies... ---", flush=True)
+
+    if distro == 'rhel':
+        pkg_mgr = get_package_manager()
+        if not pkg_mgr:
+            raise RuntimeError("Neither dnf nor yum found on this Red Hat system.")
+
+        # Enable CRB/PowerTools for build dependencies if available
+        if pkg_mgr == 'dnf':
+            for repo_name in ['crb', 'powertools', 'codeready-builder']:
+                result = subprocess.run([pkg_mgr, 'config-manager', '--set-enabled', repo_name],
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if result.returncode == 0:
+                    print(f"--> Enabled repository: {repo_name}", flush=True)
+                    break
+
+        rhel_packages = [
+            "patchelf",
+            "gcc",
+            "gcc-c++",
+            "make",
+            "git",
+            "cmake",
+            "ninja-build",
+            "autoconf",
+            "automake",
+            "meson",
+            "libtool",
+            "rdma-core-devel",
+            "numactl-devel",
+        ]
+        run_command([pkg_mgr, 'install', '-y'] + rhel_packages)
+
+        # Install EPEL if patchelf or other packages were not found
+        result = subprocess.run(['which', 'patchelf'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode != 0:
+            print("--> patchelf not found, attempting to install EPEL and retry...", flush=True)
+            subprocess.run([pkg_mgr, 'install', '-y', 'epel-release'],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            run_command([pkg_mgr, 'install', '-y', 'patchelf'])
+
+    else:
+        # Debian/Ubuntu fallback
+        apt_packages = [
+            "patchelf",
+            "build-essential",
+            "git",
+            "cmake",
+            "ninja-build",
+            "autotools-dev",
+            "automake",
+            "meson",
+            "libtool",
+            "libtool-bin"
+        ]
+        run_command(['apt-get', 'update'])
+        run_command(['apt-get', 'install', '-y'] + apt_packages)
+
     print("--- System dependencies installed successfully. ---\n", flush=True)
 
 
