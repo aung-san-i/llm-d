@@ -87,21 +87,21 @@ RUN if [ -n "${CACHE_BUSTER}" ]; then \
         echo "$CACHE_BUSTER" > /tmp/builder-buster; \
     fi;
 
-ARG TARGETPLATFORM
-ARG TARGETOS
-ARG BUILD_BASE_IMAGE_SUFFIX
-ARG CUDA_MAJOR
-ARG CUDA_MINOR
-ARG CUDA_PATCH
-ARG PYTHON_VERSION
+ARG TARGETPLATFORM=linux/amd64
+ARG TARGETOS=rhel
+ARG BUILD_BASE_IMAGE_SUFFIX=${BASE_IMAGE_SUFFIX}
+ARG CUDA_MAJOR=12
+ARG CUDA_MINOR=9
+ARG CUDA_PATCH=1
+ARG PYTHON_VERSION=3.12
 
-ARG NVSHMEM_VERSION
+ARG NVSHMEM_VERSION="v3.5.19-1"
 
-ARG USE_SCCACHE
-ARG BUILD_DEBUG
+ARG USE_SCCACHE=false
+ARG BUILD_DEBUG=false
 
-ARG ENABLE_EFA
-ARG EFA_INSTALLER_VERSION
+ARG ENABLE_EFA=false
+ARG EFA_INSTALLER_VERSION="1.46.0"
 
 WORKDIR /workspace
 
@@ -194,8 +194,8 @@ ${PKG_CONFIG_PATH}"
 
 
 # Build and install gdrcopy
-ARG GDRCOPY_REPO
-ARG GDRCOPY_VERSION
+ARG GDRCOPY_REPO="https://github.com/NVIDIA/gdrcopy.git"
+ARG GDRCOPY_VERSION="v2.5.1"
 COPY docker/scripts/cuda/builder/build-gdrcopy.sh /tmp/build-gdrcopy.sh
 RUN --mount=type=cache,target=/var/cache/git \
     --mount=type=secret,id=aws_access_key_id \
@@ -204,8 +204,8 @@ RUN --mount=type=cache,target=/var/cache/git \
     rm -f /tmp/build-gdrcopy.sh
 
 # Build UCX
-ARG UCX_REPO
-ARG UCX_VERSION
+ARG UCX_REPO="https://github.com/openucx/ucx.git"
+ARG UCX_VERSION="v1.20.0"
 COPY docker/scripts/cuda/builder/build-ucx.sh /tmp/build-ucx.sh
 RUN --mount=type=cache,target=/var/cache/git \
     --mount=type=secret,id=aws_access_key_id \
@@ -214,9 +214,9 @@ RUN --mount=type=cache,target=/var/cache/git \
     rm -f /tmp/build-ucx.sh
 
 # Build NVSHMEM
-ARG NVSHMEM_USE_GIT
-ARG NVSHMEM_REPO
-ARG NVSHMEM_VERSION
+ARG NVSHMEM_USE_GIT="true"
+ARG NVSHMEM_REPO="https://github.com/NVIDIA/nvshmem.git"
+ARG NVSHMEM_VERSION="v3.5.19-1"
 ENV NVSHMEM_CUDA_ARCHITECTURES="90a;100"
 COPY docker/scripts/cuda/builder/build-nvshmem.sh /tmp/build-nvshmem.sh
 RUN --mount=type=cache,target=/var/cache/git \
@@ -242,9 +242,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ### Decide to build NIXL from source.
 # If set to false, NIXL will be installed as a dependency of vLLM in the `install-vllm.sh` script,
 # and the `build-nixl.sh` script will be a NoOp.
-ARG BUILD_NIXL_FROM_SOURCE
-ARG NIXL_REPO
-ARG NIXL_VERSION
+ARG BUILD_NIXL_FROM_SOURCE="true"
+ARG NIXL_REPO="https://github.com/ai-dynamo/nixl.git"
+ARG NIXL_VERSION="0.10.0"
 COPY docker/scripts/cuda/builder/build-nixl.sh /tmp/build-nixl.sh
 RUN --mount=type=cache,target=/var/cache/git \
     --mount=type=secret,id=aws_access_key_id \
@@ -259,10 +259,10 @@ RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
 WORKDIR /workspace
 
 # Build LMCache wheel and its infinistore dependency
-ARG INFINISTORE_REPO
-ARG INFINISTORE_VERSION
-ARG LMCACHE_REPO
-ARG LMCACHE_VERSION
+ARG INFINISTORE_REPO="https://github.com/bytedance/InfiniStore.git"
+ARG INFINISTORE_VERSION="0.2.33"
+ARG LMCACHE_REPO="https://github.com/LMCache/LMCache.git"
+ARG LMCACHE_VERSION="v0.3.14"
 COPY docker/scripts/cuda/builder/build-lmcache.sh /tmp/build-lmcache.sh
 RUN --mount=type=cache,target=/var/cache/git \
     --mount=type=secret,id=aws_access_key_id \
@@ -277,12 +277,12 @@ WORKDIR /workspace/vllm
 # note: these libraries don't yet push sdist releases to pypi
 # so down below we do a git clone.
 # Build compiled packages as wheels (only ones that need build tools)
-ARG DEEPEP_REPO
-ARG DEEPEP_VERSION
-ARG DEEPGEMM_REPO
-ARG DEEPGEMM_VERSION
-ARG FLASHINFER_REPO
-ARG FLASHINFER_VERSION
+ARG DEEPEP_REPO="https://github.com/neuralmagic/DeepEP"
+ARG DEEPEP_VERSION="38d21b7f9bb6f3b102b1819d09439686eaa87ce8"
+ARG DEEPGEMM_REPO="https://github.com/deepseek-ai/DeepGEMM"
+ARG DEEPGEMM_VERSION="v2.1.1.post3"
+ARG FLASHINFER_REPO="https://github.com/flashinfer-ai/flashinfer.git"
+ARG FLASHINFER_VERSION="v0.6.1"
 COPY docker/scripts/cuda/builder/build-compiled-wheels.sh /tmp/build-compiled-wheels.sh
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=secret,id=aws_access_key_id \
@@ -300,19 +300,19 @@ RUN if [ -n "${CACHE_BUSTER}" ]; then \
         echo "$CACHE_BUSTER" > /tmp/builder-buster; \
     fi;
 
-ARG CUDA_MAJOR
-ARG CUDA_MINOR
-ARG CUDA_PATCH
-ARG TARGETOS
-ARG TARGETPLATFORM
-ARG FINAL_BASE_IMAGE_SUFFIX
-ARG PYTHON_VERSION
+ARG CUDA_MAJOR=12
+ARG CUDA_MINOR=9
+ARG CUDA_PATCH=1
+ARG TARGETOS=rhel
+ARG TARGETPLATFORM=linux/amd64
+ARG FINAL_BASE_IMAGE_SUFFIX=${BASE_IMAGE_SUFFIX}
+ARG PYTHON_VERSION=3.12
 
-ARG NVSHMEM_VERSION
-ARG BUILD_NIXL_FROM_SOURCE
-ARG FLASHINFER_VERSION
-ARG ENABLE_EFA
-ARG EFA_INSTALLER_VERSION
+ARG NVSHMEM_VERSION="v3.5.19-1"
+ARG BUILD_NIXL_FROM_SOURCE="true"
+ARG FLASHINFER_VERSION="v0.6.1"
+ARG ENABLE_EFA=false
+ARG EFA_INSTALLER_VERSION="1.46.0"
 
 COPY docker/constraints.txt /tmp/constraints.txt
 
@@ -443,8 +443,8 @@ RUN mkdir -p /opt/vllm-source && \
     setfacl -R -m g:0:rwX -m d:g:0:rwX /opt/vllm-source || true
 
 # Define commit SHAs as build args to avoid layer invalidation
-ARG VLLM_REPO
-ARG VLLM_COMMIT_SHA
+ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
+ARG VLLM_COMMIT_SHA="89a77b10846fd96273cce78d86d2556ea582d26e"
 
 # vllm commit to use for precompiled wheel lookup (defaults to VLLM_COMMIT_SHA)
 # useful for testing feature branches with python-only changes against merge-base binaries
