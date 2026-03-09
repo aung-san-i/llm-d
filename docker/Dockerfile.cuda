@@ -74,8 +74,8 @@ ARG VLLM_REPO="https://github.com/vllm-project/vllm.git"
 # https://github.com/vllm-project/vllm/commits/v0.16.0/
 ARG VLLM_COMMIT_SHA="89a77b10846fd96273cce78d86d2556ea582d26e"
 ARG VLLM_PRECOMPILED_WHEEL_COMMIT
-ARG VLLM_PREBUILT
-ARG VLLM_USE_PRECOMPILED
+ARG VLLM_PREBUILT=false
+ARG VLLM_USE_PRECOMPILED=false
 
 # ============================================================================
 # BUILD STAGE - Install build dependencies and create wheels
@@ -451,9 +451,9 @@ ARG VLLM_COMMIT_SHA="89a77b10846fd96273cce78d86d2556ea582d26e"
 ARG VLLM_PRECOMPILED_WHEEL_COMMIT
 
 # Dictates if we should pull a production wheel for the vllm commit sha
-ARG VLLM_PREBUILT
+ARG VLLM_PREBUILT=false
 # Dictates if we should pull precompiled binaries when installing vllm editably. These commits must be on main in vLLM.
-ARG VLLM_USE_PRECOMPILED
+ARG VLLM_USE_PRECOMPILED=false
 
 # Optional: suppress verbose Python output during pip install
 ARG SUPPRESS_PYTHON_OUTPUT
