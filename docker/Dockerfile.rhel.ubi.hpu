@@ -8,7 +8,6 @@ ARG REVISION=latest
 ARG REPO_TYPE=habanalabs
 
 FROM amr-idc-registry.infra-host.com/asv-content/intel/llm-scaler-vllm/asanoo-llm-d/vllm-gaudi-rhel.ubi.vllm
-
 USER root
 
 # Parameterize commit/branch for vllm-project & vllm-gaudi checkout
