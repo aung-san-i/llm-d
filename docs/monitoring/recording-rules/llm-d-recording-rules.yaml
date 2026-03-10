@@ -1,0 +1,126 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: llm-d-recording-rules
+  labels:
+    release: llmd
+spec:
+  groups:
+    # ── E2E Request Latency ────────────────────────────
+    - name: llmd.e2e_latency
+      interval: 15s
+      rules:
+        - record: llmd:e2e_request_latency_p50
+          expr: histogram_quantile(0.50, sum by(le, model_name, namespace) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))
+        - record: llmd:e2e_request_latency_p90
+          expr: histogram_quantile(0.90, sum by(le, model_name, namespace) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))
+        - record: llmd:e2e_request_latency_p95
+          expr: histogram_quantile(0.95, sum by(le, model_name, namespace) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))
+        - record: llmd:e2e_request_latency_p99
+          expr: histogram_quantile(0.99, sum by(le, model_name, namespace) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))
+
+    # ── Inter-Token Latency ────────────────────────────
+    - name: llmd.inter_token_latency
+      interval: 15s
+      rules:
+        - record: llmd:inter_token_latency_p50
+          expr: histogram_quantile(0.50, sum by(le, model_name, namespace) (rate(vllm:inter_token_latency_seconds_bucket[5m])))
+        - record: llmd:inter_token_latency_p90
+          expr: histogram_quantile(0.90, sum by(le, model_name, namespace) (rate(vllm:inter_token_latency_seconds_bucket[5m])))
+        - record: llmd:inter_token_latency_p95
+          expr: histogram_quantile(0.95, sum by(le, model_name, namespace) (rate(vllm:inter_token_latency_seconds_bucket[5m])))
+        - record: llmd:inter_token_latency_p99
+          expr: histogram_quantile(0.99, sum by(le, model_name, namespace) (rate(vllm:inter_token_latency_seconds_bucket[5m])))
+
+    # ── Time To First Token ────────────────────────────
+    - name: llmd.ttft
+      interval: 15s
+      rules:
+        - record: llmd:ttft_p50
+          expr: histogram_quantile(0.50, sum by(le, model_name, namespace) (rate(vllm:time_to_first_token_seconds_bucket[5m])))
+        - record: llmd:ttft_p90
+          expr: histogram_quantile(0.90, sum by(le, model_name, namespace) (rate(vllm:time_to_first_token_seconds_bucket[5m])))
+        - record: llmd:ttft_p95
+          expr: histogram_quantile(0.95, sum by(le, model_name, namespace) (rate(vllm:time_to_first_token_seconds_bucket[5m])))
+        - record: llmd:ttft_p99
+          expr: histogram_quantile(0.99, sum by(le, model_name, namespace) (rate(vllm:time_to_first_token_seconds_bucket[5m])))
+        # Decode-only TTFT (for P/D dashboards, in ms)
+        - record: llmd:ttft_decode_p50
+          expr: histogram_quantile(0.50, sum by(le, namespace) (rate(vllm:time_to_first_token_seconds_bucket{pod=~".*decode.*"}[5m]))) * 1000
+        - record: llmd:ttft_decode_p95
+          expr: histogram_quantile(0.95, sum by(le, namespace) (rate(vllm:time_to_first_token_seconds_bucket{pod=~".*decode.*"}[5m]))) * 1000
+        - record: llmd:ttft_decode_p99
+          expr: histogram_quantile(0.99, sum by(le, namespace) (rate(vllm:time_to_first_token_seconds_bucket{pod=~".*decode.*"}[5m]))) * 1000
+
+    # ── Prefill / Decode Phase Duration ────────────────
+    - name: llmd.phase_duration
+      interval: 15s
+      rules:
+        - record: llmd:prefill_duration_p50
+          expr: histogram_quantile(0.50, sum by(le, namespace) (rate(vllm:request_prefill_time_seconds_bucket[5m])))
+        - record: llmd:decode_duration_p50
+          expr: histogram_quantile(0.50, sum by(le, namespace) (rate(vllm:request_decode_time_seconds_bucket[5m])))
+
+    # ── Inference Objective Latency ────────────────────
+    - name: llmd.inference_objective
+      interval: 15s
+      rules:
+        - record: llmd:objective_latency_p50
+          expr: histogram_quantile(0.50, sum by(le, model_name, namespace) (rate(inference_objective_request_duration_seconds_bucket[5m])))
+        - record: llmd:objective_latency_p90
+          expr: histogram_quantile(0.90, sum by(le, model_name, namespace) (rate(inference_objective_request_duration_seconds_bucket[5m])))
+        - record: llmd:objective_latency_p99
+          expr: histogram_quantile(0.99, sum by(le, model_name, namespace) (rate(inference_objective_request_duration_seconds_bucket[5m])))
+
+    # ── EPP / Scheduler Latency ────────────────────────
+    - name: llmd.epp
+      interval: 15s
+      rules:
+        - record: llmd:epp_e2e_latency_p99
+          expr: histogram_quantile(0.99, sum by(le, namespace) (rate(inference_extension_scheduler_e2e_duration_seconds_bucket[5m])))
+        - record: llmd:plugin_latency_p99
+          expr: histogram_quantile(0.99, sum by(le, plugin_type, namespace) (rate(inference_extension_plugin_duration_seconds_bucket[5m])))
+
+    # ── NIXL / KV Transfer ─────────────────────────────
+    - name: llmd.nixl
+      interval: 15s
+      rules:
+        # Transfer time (ms)
+        - record: llmd:nixl_xfer_time_p50
+          expr: histogram_quantile(0.50, sum by(le) (rate(vllm:nixl_xfer_time_seconds_bucket[5m]))) * 1000
+        - record: llmd:nixl_xfer_time_p95
+          expr: histogram_quantile(0.95, sum by(le) (rate(vllm:nixl_xfer_time_seconds_bucket[5m]))) * 1000
+        - record: llmd:nixl_xfer_time_p99
+          expr: histogram_quantile(0.99, sum by(le) (rate(vllm:nixl_xfer_time_seconds_bucket[5m]))) * 1000
+        # Post time (ms)
+        - record: llmd:nixl_post_time_p50
+          expr: histogram_quantile(0.50, sum by(le) (rate(vllm:nixl_post_time_seconds_bucket[5m]))) * 1000
+        - record: llmd:nixl_post_time_p95
+          expr: histogram_quantile(0.95, sum by(le) (rate(vllm:nixl_post_time_seconds_bucket[5m]))) * 1000
+        - record: llmd:nixl_post_time_p99
+          expr: histogram_quantile(0.99, sum by(le) (rate(vllm:nixl_post_time_seconds_bucket[5m]))) * 1000
+        # Bytes transferred (MB)
+        - record: llmd:nixl_bytes_mb_p50
+          expr: histogram_quantile(0.50, sum by(le) (rate(vllm:nixl_bytes_transferred_bucket[5m]))) / 1048576
+        - record: llmd:nixl_bytes_mb_p95
+          expr: histogram_quantile(0.95, sum by(le) (rate(vllm:nixl_bytes_transferred_bucket[5m]))) / 1048576
+        - record: llmd:nixl_bytes_mb_p99
+          expr: histogram_quantile(0.99, sum by(le) (rate(vllm:nixl_bytes_transferred_bucket[5m]))) / 1048576
+        # Descriptors per transfer
+        - record: llmd:nixl_descriptors_p50
+          expr: histogram_quantile(0.50, sum by(le) (rate(vllm:nixl_num_descriptors_bucket[5m])))
+        - record: llmd:nixl_descriptors_p95
+          expr: histogram_quantile(0.95, sum by(le) (rate(vllm:nixl_num_descriptors_bucket[5m])))
+        - record: llmd:nixl_descriptors_p99
+          expr: histogram_quantile(0.99, sum by(le) (rate(vllm:nixl_num_descriptors_bucket[5m])))
+
+    # ── Token Throughput ───────────────────────────────
+    - name: llmd.throughput
+      interval: 15s
+      rules:
+        - record: llmd:generation_tokens_per_sec
+          expr: sum by(model_name, pod, namespace) (rate(vllm:generation_tokens_total[5m]))
+        - record: llmd:prompt_tokens_per_sec
+          expr: sum by(model_name, pod, namespace) (rate(vllm:prompt_tokens_total[5m]))
+        - record: llmd:total_tokens_per_sec
+          expr: sum by(model_name, pod, namespace) (rate(vllm:prompt_tokens_total[5m]) + rate(vllm:generation_tokens_total[5m]))
