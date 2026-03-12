@@ -5,6 +5,7 @@ resources:
   # - ./vllm/overlays/preloaded
   - ./vllm/overlays/runtime-loaded
   # - ./vllm/overlays/runtime-loaded-from-pv
+  - ./destination-rule.yaml
 
 helmCharts:
   - name: inferencepool
