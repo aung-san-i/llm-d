@@ -349,8 +349,14 @@ RUN cd ${VLLM_GAUDI_SRC_DIR} && \
 # Install other modules for test
 RUN pip install lm-eval[api] pytest
 
-# Clean up apt cache
+# Clean up cache
 RUN dnf clean all && rm -rf /var/cache/dnf
+
+# Setup non-root user for OpenShift compatibility
+RUN umask 002 && \
+    useradd --uid 2000 --gid 0 vllm && \
+    chmod g+rwx /home/vllm /usr/src /workspace && \
+    chmod -R g+rwx /var/log/habana_logs
 
 USER 2000
 ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]
