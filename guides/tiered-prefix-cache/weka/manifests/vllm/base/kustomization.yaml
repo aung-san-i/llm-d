@@ -16,7 +16,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: "ghcr.io/llm-d/llm-d:latest"
+        value: "ghcr.io/llm-d/llm-d:v0.5.1"
 
   # Update command and args for WEKA deployment
   - target:
@@ -129,19 +129,11 @@ patches:
         path: /spec/template/spec/initContainers
         value:
           - name: enable-nvidia-gds
-            image: "ghcr.io/llm-d/llm-d:latest"
+            image: "ghcr.io/llm-d/llm-d:v0.5.1"
             command:
               - /usr/local/bin/enable-nvidia-gds.sh
             securityContext:
               privileged: true
-          - name: create-cufile-on-node
-            image: quay.io/grpereir/amg-utils:latest
-            command:
-              - /usr/local/bin/entrypoint.sh
-            args:
-              - /bin/bash
-              - -lc
-              - "true"
 
   # Replace startup probe with GDS-specific probe
   - target:
@@ -219,7 +211,7 @@ patches:
             medium: Memory
             sizeLimit: 16Gi
 
-  # Add WEKA storage volumes (will be patched by storage overlays)
+  # Add WEKA storage volume (will be patched by storage overlays)
   - target:
       kind: Deployment
       name: llm-d-model-server
@@ -229,13 +221,6 @@ patches:
         value:
           name: weka-storage
           # This will be patched by storage overlays (pvc or hostPath)
-      - op: add
-        path: /spec/template/spec/volumes/-
-        value:
-          name: host-node-cufile
-          hostPath:
-            path: ~/amg_stable/cufile.json
-            type: File
 
   # Remove data volumeMount from base (not needed for WEKA)
   - target:
@@ -258,6 +243,7 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/volumeMounts/-
         value:
-          name: host-node-cufile
+          name: weka-storage
           mountPath: /etc/cufile.json
+          subPath: cufile.json
           readOnly: true

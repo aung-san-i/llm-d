@@ -30,14 +30,6 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-        - name: create-cufile-on-node
-          image: quay.io/grpereir/amg-utils:latest
-          command:
-            - /usr/local/bin/entrypoint.sh
-          args:
-            - /bin/bash
-            - -lc
-            - "true"
       containers:
         - name: vllm
           args:

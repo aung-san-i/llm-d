@@ -15,10 +15,10 @@ This deployment uses a MultiConnector configuration that combines:
 
 The WEKA GDS integration includes:
 
-1. **InitContainers** - Automated setup that loads GDS kernel modules (`nvidia_fs` and `nvidia_peermem`) and creates cufile.json configuration
-2. **Volume Mounts** - Mounts cufile.json from `~/amg_stable/cufile.json` on the host to `/etc/cufile.json` in the container
+1. **cufile Configuration** - WEKA Operator provisions cufile.json (users can adjust the path via `subPath` if needed)
+2. **Volume Mounts** - Mounts cufile.json from WEKA storage to `/etc/cufile.json` into container
 3. **Storage Options** - Supports both PersistentVolumeClaim (PVC) and host-path storage configurations
-4. **Startup Probe** - Verifies GDS readiness (kernel modules loaded + cufile.json valid) before starting the container
+4. **GDS Requirements** - InitContainer loads kernel modules (`nvidia_fs` and `nvidia_peermem`) on host nodes
 
 ## Architecture
 
@@ -29,25 +29,25 @@ The manifests use a layered kustomize structure with MultiConnector support:
 - **MultiConnector KV transfer**: Combines NIXL (network-based) and LMCache (storage-based) connectors
 - **Prefill/Decode disaggregation**: Separate deployments optimized for each phase via NIXL
 - **Tiered prefix caching**: KV cache offloading to WEKA storage via LMCache with GDS
-- **Decode** has routing-sidecar for coordinating with prefill instances
-- **Prefill** has no routing-sidecar, handles initial prompt processing
 - **Storage organized by type**: Choose `pvc/` or `host/` based on your storage setup
 
 ## Prerequisites
 
 - Have the [proper client tools installed on your local system](../../prereq/client-setup/README.md) to use this guide
-- WEKA storage system configured with:
-  - WEKA CSI driver installed (for PVC storage option) - see [WEKA CSI Plugin documentation](https://docs.weka.io/appendices/weka-csi-plugin)
-  - WEKA filesystem mounted on nodes (for hostPath storage option)
-  - GPU Direct Storage (GDS) enabled:
-    - NVIDIA GPUs with GPUDirect Storage capability
-    - NVIDIA driver version 450.80.02 or later
-    - kernel modules: `nvidia-fs` and `nvidia_peermem` must be available on host
-    - WEKA client with GDS support installed
-    - **RHEL nodes only**: Install `nvidia-gds` package on the host (`dnf install nvidia-gds-12-9`)
-- AMG Utils for GDS configuration:
-  - The `amgctl` tool will be run via initContainer to create `~/amg_stable/cufile.json` on each node
-  - The file is then mounted into the container at `/etc/cufile.json`
+- **WEKA Operator**:
+  - Deploy the WEKA Operator to provision WEKA clients in your cluster
+  - Enable CSI in the operator (`csi.installationEnabled: true`) for PVC support
+  - WEKA Operator provisions cufile.json configuration for GPU Direct Storage
+  - See WEKA documentation for operator deployment instructions
+- **GPU Direct Storage (GDS)** requirements:
+  - NVIDIA GPUs with GPUDirect Storage capability
+  - NVIDIA driver version 450.80.02 or later
+  - Kernel modules: `nvidia-fs` and `nvidia_peermem` available on host nodes
+  - **RHEL nodes only**: Install `nvidia-gds` package on the host (`dnf install nvidia-gds-12-9`)
+- **Pod Configuration** for llm-d workloads (configured via manifests in this guide):
+  - **GDS kernel modules**: InitContainer (`enable-nvidia-gds`) loads required kernel modules
+  - **cufile mount**: cufile.json from WEKA storage mounted to `/etc/cufile.json`
+  - **Storage mount**: WEKA storage mounted for models, cache, and cufile.json (via PVC or hostPath)
 - Create Installation Namespace:
 
   ```bash
@@ -76,21 +76,15 @@ Choose either PVC or host-path storage based on your WEKA setup.
 
 Configure and deploy the WEKA CSI StorageClass following the [WEKA backend guide](../storage/manifests/backends/weka/README.md).
 
-Set your storage class name for use in the next step:
+##### 2. Create the PVC
+
+Create a PersistentVolumeClaim named `wekafs` with 100Gi storage:
+
+**Note:** Set `STORAGE_CLASS` to match the StorageClass name created in step 1.
 
 ```bash
 export STORAGE_CLASS=weka-csi-sc
-```
-
-##### 2. Create the PVC
-
-Create a PersistentVolumeClaim named `wekafs-amg` with 100Gi storage using the storage guide's PVC template:
-
-```bash
-envsubst < ../storage/manifests/pvc.yaml | \
-  sed -e 's/llm-d-kv-cache-storage/wekafs-amg/' \
-      -e 's/18000Gi/100Gi/' | \
-  kubectl apply -f - -n ${NAMESPACE}
+envsubst < ./manifests/vllm/overlays/pvc/pvc.yaml | kubectl apply -f - -n ${NAMESPACE}
 ```
 
 ##### 3. Deploy both decode and prefill with PVC storage
@@ -102,12 +96,12 @@ envsubst < ../storage/manifests/pvc.yaml | \
    This creates:
 
 - ServiceAccount: `weka-vllm`
-- Deployment `decode`:
-  - 1 replica with 4 GPUs (tensor-parallel), 16 CPUs, port 8200
-  - InitContainers: `routing-proxy`, `create-cufile-on-node` (amg-utils)
-- Deployment `prefill`:
-  - 4 replicas, each with 1 GPU, 8 CPUs, port 8000
-  - InitContainers: `create-cufile-on-node` (amg-utils)
+- Deployment `weka-decode`:
+  - 1 replica with 4 GPUs (tensor-parallel), 16 CPUs, 64Gi memory, port 8200
+  - InitContainers: `routing-proxy`, `enable-nvidia-gds`
+- Deployment `weka-prefill`:
+  - 4 replicas (each replica: 1 GPU, 8 CPUs, 64Gi memory), port 8000
+  - InitContainers: `enable-nvidia-gds`
 
 #### Option 2: Host-Path Storage
 
@@ -135,14 +129,14 @@ envsubst < ../storage/manifests/pvc.yaml | \
 
    This creates:
    - ServiceAccount: `weka-vllm`
-   - Deployment `decode`: 1 replica with 4 GPUs (tensor-parallel), 16 CPUs, port 8200
-     - InitContainers: `routing-proxy`, `create-cufile-on-node` (amg-utils)
-   - Deployment `prefill`: 4 replicas, each with 1 GPU, 8 CPUs, port 8000
-     - InitContainers: `create-cufile-on-node` (amg-utils)
+   - Deployment `weka-decode`: 1 replica with 4 GPUs (tensor-parallel), 16 CPUs, 64Gi memory, port 8200
+     - InitContainers: `routing-proxy`, `enable-nvidia-gds`
+   - Deployment `weka-prefill`: 4 replicas (each replica: 1 GPU, 8 CPUs, 64Gi memory), port 8000
+     - InitContainers: `enable-nvidia-gds`
 
 ### Deploy InferencePool
 
-Deploy the InferencePool and inference scheduler:
+Deploy the inference-scheduler and create the InferencePool CR:
 
 **Note:** You can customize the InferencePool or EndpointPickerConfig by editing `./manifests/inferencepool.values.yaml`.
 
@@ -150,7 +144,7 @@ Deploy the InferencePool and inference scheduler:
 helm install weka-vllm \
     -n ${NAMESPACE} \
     -f ./manifests/inferencepool.values.yaml \
-    oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool --version v1.3.0
+    oci://registry.k8s.io/gateway-api-inference-extension/charts/inferencepool --version v1.4.0
 ```
 
 This creates:
@@ -166,7 +160,7 @@ This creates:
 
 ### Deploy Gateway
 
-**Important:** Deploy the Gateway after the InferencePool, as the HTTPRoute references the InferencePool backend (`weka-vllm`).
+Deploy the Gateway, HTTPRoute, and ConfigMap. The HTTPRoute references the InferencePool backend (`weka-vllm`).
 
 **Note:** By default, the Gateway service type is `LoadBalancer`. If you want to use `ClusterIP` instead, add the following patch to `./manifests/gateway/overlays/istio/kustomization.yaml` in the `patches:` section before deploying:
 
@@ -181,7 +175,7 @@ This creates:
           networking.istio.io/service-type: ClusterIP
 ```
 
-Deploy the Gateway and HTTPRoute resources:
+Deploy the resources:
 
 ```bash
 kubectl apply -k ./manifests/gateway/overlays/istio

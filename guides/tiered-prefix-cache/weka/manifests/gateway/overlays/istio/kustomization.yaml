@@ -55,5 +55,3 @@ patches:
 labels:
   - pairs:
       app.kubernetes.io/instance: weka
-      app.kubernetes.io/gateway: llm-d-inference-gateway
-      app.kubernetes.io/component: inference-gateway

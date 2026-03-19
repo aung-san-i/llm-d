@@ -52,11 +52,11 @@ Offloading prefix cache to a shared (remote) storage tier provides several impor
 * **Shared KV-cache across nodes** - Multiple inference replicas can access and reuse the same prefix cache.
 * **Fast scale-up** - New nodes can immediately reuse existing KV-cache data without warming the cache from scratch.
 * **Persistence across restarts or failures** - KV-cache data survives pod restarts, rescheduling, and node failures.
-* **Enterprise storage integration** - Can leverage mature enterprise storage systems (for example CephFS, GCP Lustre, IBM Storage Scale) with built-in durability, monitoring, and access control.
+* **Enterprise storage integration** - Can leverage mature enterprise storage systems (for example CephFS, GCP Lustre, IBM Storage Scale, WEKA) with built-in durability, monitoring, and access control.
 
 However, shared storage introduces additional operational and performance considerations. Latency and throughput depend on the characteristics of the underlying storage system, so careful evaluation is required to ensure that cache transfer overhead does not negatively impact inference performance.
 
-Integration between the storage system and llm-d is achieved through vLLM connectors. The specific connector and data path depend on the storage system type and the underlying transport mechanism. 
+Integration between the storage system and llm-d is achieved through vLLM connectors. The specific connector and data path depend on the storage system type and the underlying transport mechanism.
 For example, different implementations may use CPU staging buffers, GPU Direct Storage (GDS), or NIXL-based data movement.
 Any storage connector that is compatible with vLLM can be used **transparently within the llm-d project**.
 

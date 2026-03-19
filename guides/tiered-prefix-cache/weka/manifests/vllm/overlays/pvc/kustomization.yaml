@@ -18,4 +18,4 @@ patches:
         value:
           name: weka-storage
           persistentVolumeClaim:
-            claimName: wekafs-amg
+            claimName: wekafs

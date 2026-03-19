@@ -1,7 +1,7 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: weka-csi-sc
+  name: $STORAGE_CLASS
 parameters:
   capacityEnforcement: HARD
   filesystemName: default

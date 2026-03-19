@@ -7,19 +7,19 @@ patches:
   # Apply strategic merge patch for prefill configuration
   - path: deployment-patch.yaml
 
-  # Rename deployment to "prefill"
+  # Rename deployment to "weka-prefill"
   - target:
       kind: Deployment
       name: llm-d-model-server
     patch: |-
       - op: replace
         path: /metadata/name
-        value: prefill
+        value: weka-prefill
 
   # Set ports for prefill: 8000 (vLLM API) and 5600 (nixl side channel)
   - target:
       kind: Deployment
-      name: prefill
+      name: weka-prefill
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/ports

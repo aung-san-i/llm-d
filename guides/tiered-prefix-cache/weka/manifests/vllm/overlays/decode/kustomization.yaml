@@ -7,19 +7,19 @@ patches:
   # Apply strategic merge patch for decode configuration
   - path: deployment-patch.yaml
 
-  # Rename deployment to "decode"
+  # Rename deployment to "weka-decode"
   - target:
       kind: Deployment
       name: llm-d-model-server
     patch: |-
       - op: replace
         path: /metadata/name
-        value: decode
+        value: weka-decode
 
   # Set ports for decode: 8200 (vLLM API) and 5600 (nixl side channel)
   - target:
       kind: Deployment
-      name: decode
+      name: weka-decode
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/ports
