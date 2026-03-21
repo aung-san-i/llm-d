@@ -495,11 +495,12 @@ RUN umask 002 && \
 
 # default opinionated env var for HF_HOME, over-writeable
 ENV LLM_D_MODELS_DIR=/var/lib/llm-d/models \
-    HF_HOME=/var/lib/llm-d/.hf
+    HF_HOME=/var/lib/llm-d/.hf \
+    LORA_RESOLVER_DIR=/var/lib/llm-d/lora-adapters
 
 # creates default models directory and makes path writeable for both root and default user, with symlink for convenience
 # find command keeps group=0 on all new subdirs created later
-RUN mkdir -p "$LLM_D_MODELS_DIR" "$HF_HOME" && \
+RUN mkdir -p "$LORA_RESOLVER_DIR" "$LLM_D_MODELS_DIR" "$HF_HOME" && \
     chown -R root:0 /var/lib/llm-d && \
     chmod -R g+rwX /var/lib/llm-d && \
     find /var/lib/llm-d -type d -exec chmod g+s {} \; && \
@@ -520,6 +521,9 @@ ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/nvidia/bin:${PATH}" \
     VLLM_SKIP_P2P_CHECK=1 \
     VLLM_CACHE_ROOT=/tmp/vllm \
     UCX_MEM_MMAP_HOOK_MODE=none
+
+# Add script for copying LoRA adapters from HuggingFace cache to the LoRA resolver directory
+COPY runtime/bin/copy-lora-structure.sh /usr/local/bin/copy-lora-structure
 
 USER 2000
 WORKDIR /home/vllm

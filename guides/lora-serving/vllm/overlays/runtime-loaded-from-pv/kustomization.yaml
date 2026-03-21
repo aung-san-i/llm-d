@@ -5,15 +5,6 @@ resources:
   - pvc.yaml
 
 patches:
-  # Set replicas to 4
-  - target:
-      kind: Deployment
-      name: llm-d-model-server
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 4
-  
   # Configure vLLM with runtime LoRA loading
   - target:
       kind: Deployment

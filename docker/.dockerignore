@@ -1,0 +1,36 @@
+# --- Git / metadata ---
+.git
+.gitignore
+.gitattributes
+**/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+
+# --- Editor / OS junk ---
+.DS_Store
+*.swp
+*.swo
+*.log
+
+# --- Build artifacts ---
+dist/
+build/
+tmp/
+*.tar.gz
+*.whl
+
+# --- Docker-related ---
+Dockerfile*
+
+

@@ -14,3 +14,10 @@ patches:
           metadata:
             labels:
               llm-d.ai/guide: "lora-serving"
+  - target:
+      kind: Deployment
+      name: llm-d-model-server
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4

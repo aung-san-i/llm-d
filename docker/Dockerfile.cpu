@@ -152,5 +152,14 @@ COPY docker/scripts/cpu/install_nixl.py /workspace/install_nixl.py
 # Install nixl + UCX
 RUN python3 /workspace/install_nixl.py
 
+# Create lora-resolver directory for housing lora weights
+# Todo: once https://github.com/llm-d/llm-d/pull/990/changes merges,
+# refactor to extend the proper permissions setup defined there.
+ENV LORA_RESOLVER_DIR=/var/lib/llm-d/lora-adapters
+RUN mkdir -p "$LORA_RESOLVER_DIR"
+
+# Add script for copying LoRA adapters from HuggingFace cache to the LoRA resolver directory
+COPY runtime/bin/copy-lora-structure.sh /usr/local/bin/copy-lora-structure
+
 WORKDIR /workspace
 ENTRYPOINT ["python", "-m", "vllm.entrypoints.openai.api_server"]
