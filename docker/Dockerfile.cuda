@@ -430,17 +430,38 @@ RUN export UV_INSTALL_DIR=/usr/local/bin && \
 # Copy compiled wheels
 COPY --from=builder /wheels/*.whl /tmp/wheels/
 
-# Create the vllm user
-RUN useradd --uid 2000 --gid 0 -m vllm && \
-    touch /home/vllm/.bashrc
+# default opinionated env var for HF_HOME, over-writeable
+ENV LLM_D_MODELS_DIR=/var/lib/llm-d/models \
+    HF_HOME=/var/lib/llm-d/.hf \
+    HF_HUB_CACHE=/var/lib/llm-d/.hf/hub
 
-# Create the vllm workspace with permissions to swap commits and remotes
-# hadolint ignore=SC2015
-RUN mkdir -p /opt/vllm-source && \
-    chown -R 2000:0 /opt/vllm-source && \
-    chmod -R g+rwX /opt/vllm-source && \
-    find /opt/vllm-source -type d -exec chmod g+s {} \; && \
-    setfacl -R -m g:0:rwX -m d:g:0:rwX /opt/vllm-source || true
+# Create a non-root runtime user with primary group 0 so application-owned
+# directories that are root:0 and group-writable remain writable by both the
+# default runtime user and root across container platforms.
+RUN useradd --uid 2000 --gid 0 -m llm-d && \
+    touch /home/llm-d/.bashrc && \
+    mkdir -p /opt/vllm-source "$LLM_D_MODELS_DIR" "$HF_HOME" "$HF_HUB_CACHE" && \
+    chown -R root:0 /opt/vllm-source /home/llm-d /var/lib/llm-d && \
+    chmod -R g+rwX /opt/vllm-source /home/llm-d /var/lib/llm-d && \
+    find /opt/vllm-source /home/llm-d /var/lib/llm-d -type d -exec chmod g+s {} \; && \
+    ln -snf /var/lib/llm-d/models /models
+
+# Configure default cache locations for libraries that write transient data at runtime.
+# These are pointed to /tmp to ensure they are always writable regardless of the
+# runtime user (root, non-root, or arbitrary UID in Kubernetes environments).
+#
+# This avoids reliance on $HOME (which may not be set or writable) and ensures
+# consistent behavior across CPU/GPU backends and container platforms.
+ENV OUTLINES_CACHE_DIR=/tmp/outlines \
+    NUMBA_CACHE_DIR=/tmp/numba \
+    TRITON_CACHE_DIR=/tmp/triton \
+    VLLM_CACHE_ROOT=/tmp/vllm
+
+# Pre-create cache directories and ensure /tmp is world-writable with the sticky bit.
+# This guarantees all users can write cache data safely without interfering with
+# other users' files.
+RUN mkdir -p "$OUTLINES_CACHE_DIR" "$NUMBA_CACHE_DIR" "$TRITON_CACHE_DIR" "$VLLM_CACHE_ROOT" && \
+    chmod -R 1777 /tmp
 
 # Define commit SHAs as build args to avoid layer invalidation
 ARG VLLM_REPO
@@ -474,6 +495,16 @@ RUN --mount=type=cache,target=/var/cache/git \
     /tmp/install-vllm.sh && \
     rm /tmp/install-vllm.sh
 
+# Normalize permissions after cloning/building vLLM. The initial directory setup
+# only guarantees that /opt/vllm-source itself is writable; files and directories
+# created later during clone/build steps may be owned differently or miss group
+# write bits. Reapplying ownership, group-write permissions, and setgid ensures
+# the populated source tree remains writable for both root and the default
+# non-root runtime user.
+RUN chown -R root:0 /opt/vllm-source && \
+    chmod -R g+rwX /opt/vllm-source && \
+    find /opt/vllm-source -type d -exec chmod g+s {} \;
+
 # install OTEL packages to enable tracing
 COPY docker/packages/common/runtime-otel-package-requirements.txt /workspace/runtime-otel-package-requirements.txt
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -486,32 +517,10 @@ RUN bash -c ". /tmp/package-utils.sh && \
     cleanup_packages \${TARGETOS} && \
     rm /tmp/package-utils.sh"
 
-# setup non-root user for OpenShift
-RUN umask 002 && \
-    rm -rf /home/vllm && \
-    mkdir -p /home/vllm && \
-    chown vllm:root /home/vllm && \
-    chmod g+rwx /home/vllm
-
-# default opinionated env var for HF_HOME, over-writeable
-ENV LLM_D_MODELS_DIR=/var/lib/llm-d/models \
-    HF_HOME=/var/lib/llm-d/.hf
-
-# creates default models directory and makes path writeable for both root and default user, with symlink for convenience
-# find command keeps group=0 on all new subdirs created later
-RUN mkdir -p "$LLM_D_MODELS_DIR" "$HF_HOME" && \
-    chown -R root:0 /var/lib/llm-d && \
-    chmod -R g+rwX /var/lib/llm-d && \
-    find /var/lib/llm-d -type d -exec chmod g+s {} \; && \
-    ln -snf /var/lib/llm-d/models /models
-
 ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/nvidia/bin:${PATH}" \
-    HOME=/home/vllm \
+    HOME=/home/llm-d \
     VLLM_USAGE_SOURCE=production-docker-image \
     VLLM_WORKER_MULTIPROC_METHOD=fork \
-    OUTLINES_CACHE_DIR=/tmp/outlines \
-    NUMBA_CACHE_DIR=/tmp/numba \
-    TRITON_CACHE_DIR=/tmp/triton \
     # TRITON_LIBCUDA_PATH: On RHEL use /usr/lib64, on Ubuntu ARM64 use /usr/lib/aarch64-linux-gnu, on Ubuntu AMD64 use /usr/lib/x86_64-linux-gnu
     # Can be overridden at runtime via deployment config
     TRITON_LIBCUDA_PATH=/usr/lib64 \
@@ -522,6 +531,6 @@ ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/nvidia/bin:${PATH}" \
     UCX_MEM_MMAP_HOOK_MODE=none
 
 USER 2000
-WORKDIR /home/vllm
+WORKDIR /home/llm-d
 
 ENTRYPOINT ["python", "-m", "vllm.entrypoints.openai.api_server"]

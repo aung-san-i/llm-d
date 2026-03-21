@@ -152,5 +152,31 @@ COPY docker/scripts/cpu/install_nixl.py /workspace/install_nixl.py
 # Install nixl + UCX
 RUN python3 /workspace/install_nixl.py
 
-WORKDIR /workspace
+# default opinionated env var for HF_HOME, over-writeable
+ENV LLM_D_MODELS_DIR=/var/lib/llm-d/models \
+    HF_HOME=/var/lib/llm-d/.hf \
+    HF_HUB_CACHE=/var/lib/llm-d/.hf/hub
+
+# Create a non-root runtime user with primary group 0 so application-owned
+# directories that are root:0 and group-writable remain writable by both the
+RUN useradd --uid 2000 --gid 0 -m llm-d && \
+    touch /home/llm-d/.bashrc && \
+    mkdir -p "$LLM_D_MODELS_DIR" "$HF_HOME" "$HF_HUB_CACHE" && \
+    chown -R root:0 /home/llm-d /var/lib/llm-d && \
+    chmod -R g+rwX /home/llm-d /var/lib/llm-d && \
+    find /home/llm-d /var/lib/llm-d -type d -exec chmod g+s {} \; && \
+    ln -snf /var/lib/llm-d/models /models
+
+# Default cache locations for runtime libraries. Use /tmp to guarantee writeability
+# across root, non-root, and arbitrary UID execution without relying on $HOME.
+ENV TRITON_CACHE_DIR=/tmp/triton \
+    VLLM_CACHE_ROOT=/tmp/vllm
+
+# Ensure cache dirs exist and /tmp is universally writable (sticky bit prevents
+# users from deleting each other's files).
+RUN mkdir -p "$TRITON_CACHE_DIR" "$VLLM_CACHE_ROOT" && \
+    chmod -R 1777 /tmp    
+
+USER 2000
+WORKDIR /home/llm-d
 ENTRYPOINT ["python", "-m", "vllm.entrypoints.openai.api_server"]
