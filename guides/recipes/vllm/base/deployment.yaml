@@ -79,11 +79,8 @@ spec:
             - mountPath: /dev/shm
               name: shm
       restartPolicy: Always
-
       enableServiceLinks: false
-
       terminationGracePeriodSeconds: 130
-
       volumes:
         - name: data
           emptyDir: {}

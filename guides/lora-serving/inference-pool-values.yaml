@@ -4,10 +4,35 @@ inferencePool:
       llm-d.ai/inference-serving: "true"
       llm-d.ai/guide: "lora-serving"
 inferenceExtension:
-  flags:
-    # in vLLM 10.0+, the metric is renamed while upstream GAIE is still using the old name as default.
-    # See https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1905.
-    kv-cache-usage-percentage-metric: "vllm:kv_cache_usage_perc"
   monitoring:
     prometheus:
       enable: true
+  pluginsConfigFile: "lora-serving.yaml"
+  pluginsCustomConfig:
+    lora-serving.yaml: |
+      apiVersion: inference.networking.x-k8s.io/v1alpha1
+      kind: EndpointPickerConfig
+      plugins:
+        - type: single-profile-handler
+        - type: metrics-data-source
+          parameters:
+            scheme: http
+            path: /metrics
+            insecureSkipVerify: true
+        - type: queue-scorer
+        - type: kv-cache-utilization-scorer
+        - type: prefix-cache-scorer
+        - type: lora-affinity-scorer
+        - type: max-score-picker
+      schedulingProfiles:
+        - name: default
+          plugins:
+            - pluginRef: queue-scorer
+              weight: 1.0
+            - pluginRef: kv-cache-utilization-scorer
+              weight: 1.0
+            - pluginRef: prefix-cache-scorer
+              weight: 1.5
+            - pluginRef: lora-affinity-scorer
+              weight: 6.0
+            - pluginRef: max-score-picker
