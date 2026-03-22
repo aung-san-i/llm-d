@@ -444,7 +444,7 @@ RUN useradd --uid 2000 --gid 0 -m llm-d && \
     chown -R root:0 /opt/vllm-source /home/llm-d /var/lib/llm-d && \
     chmod -R g+rwX /opt/vllm-source /home/llm-d /var/lib/llm-d && \
     find /opt/vllm-source /home/llm-d /var/lib/llm-d -type d -exec chmod g+s {} \; && \
-    ln -snf /var/lib/llm-d/models /models
+    ln -snf "$LLM_D_MODELS_DIR" /models
 
 # Configure default cache locations for libraries that write transient data at runtime.
 # These are pointed to /tmp to ensure they are always writable regardless of the
@@ -452,6 +452,9 @@ RUN useradd --uid 2000 --gid 0 -m llm-d && \
 #
 # This avoids reliance on $HOME (which may not be set or writable) and ensures
 # consistent behavior across CPU/GPU backends and container platforms.
+#
+# NUMBA_CACHE_DIR and TRITON_CACHE_DIR are only relevant for CUDA (JIT compilation);
+# other backends do not use them.
 ENV OUTLINES_CACHE_DIR=/tmp/outlines \
     NUMBA_CACHE_DIR=/tmp/numba \
     TRITON_CACHE_DIR=/tmp/triton \
@@ -527,7 +530,6 @@ ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/nvidia/bin:${PATH}" \
     TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=15 \
     TORCH_NCCL_DUMP_ON_TIMEOUT=0 \
     VLLM_SKIP_P2P_CHECK=1 \
-    VLLM_CACHE_ROOT=/tmp/vllm \
     UCX_MEM_MMAP_HOOK_MODE=none
 
 USER 2000
