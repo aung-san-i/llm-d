@@ -1,8 +1,8 @@
 # ============================================================================
 # shared vLLM Version Configuration
 # ============================================================================
-VLLM_REPO=https://github.com/vllm-project/vllm.git
-VLLM_COMMIT_SHA=95c0f928cdeeaa21c4906e73cee6a156e1b3b995 # maps to v0.17.1 tag
+VLLM_REPO=https://github.com/jtechapps/vllm-1.git
+VLLM_COMMIT_SHA=91eeec25afeacb3803c1254d74e4bee675413b17 # maps to v0.17.1 tag
 
 # ============================================================================
 # Cuda specific configs
