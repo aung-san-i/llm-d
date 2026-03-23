@@ -307,6 +307,7 @@ jobs:
     needs: [detect-changes]
     if: ${{ needs.detect-changes.outputs.cuda == 'true' }}
     continue-on-error: true
+    timeout-minutes: 480  # 8 hours max for compiling vLLM from source
     strategy:
       fail-fast: false
       # multi-OS build matrix: creates 4 images (2 platforms × 2 OS variants)
@@ -320,21 +321,22 @@ jobs:
             os: rhel
             base_image_suffix: ubi9
             image_suffix: ""
-          - platform: linux/arm64
-            runner: vllm-runner-arm
-            os: rhel
-            base_image_suffix: ubi9
-            image_suffix: ""
+          # Temporarily disabled ARM64 - compiling vLLM from source is too resource intensive
+          # - platform: linux/arm64
+          #   runner: vllm-runner-arm
+          #   os: rhel
+          #   base_image_suffix: ubi9
+          #   image_suffix: ""
           - platform: linux/amd64
             runner: vllm-runner
             os: ubuntu
             base_image_suffix: ubuntu24.04
             image_suffix: "-ubuntu"
-          - platform: linux/arm64
-            runner: vllm-runner-arm
-            os: ubuntu
-            base_image_suffix: ubuntu24.04
-            image_suffix: "-ubuntu"
+          # - platform: linux/arm64
+          #   runner: vllm-runner-arm
+          #   os: ubuntu
+          #   base_image_suffix: ubuntu24.04
+          #   image_suffix: "-ubuntu"
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
