@@ -116,7 +116,7 @@
 
     - name: Clone vLLM repo
       git:
-        repo: https://github.com/vllm-project/vllm.git
+        repo: https://github.com/kapiljain1989/vllm.git
         dest: "/home/ubuntu/vllm"
         version: "{{ VLLM_COMMIT }}"
 
