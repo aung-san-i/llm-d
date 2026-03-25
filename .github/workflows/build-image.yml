@@ -256,7 +256,7 @@ jobs:
             CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
-            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
+            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu24.04' || matrix.base_image_suffix }}
             FINAL_BASE_IMAGE_SUFFIX=${{ matrix.base_image_suffix }}
             CUDA_MAJOR=${{ steps.common-version.outputs.cuda_major }}
             CUDA_MINOR=${{ steps.common-version.outputs.cuda_minor }}
@@ -418,7 +418,7 @@ jobs:
             CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
-            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
+            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu24.04' || matrix.base_image_suffix }}
             FINAL_BASE_IMAGE_SUFFIX=${{ matrix.base_image_suffix }}
             CUDA_MAJOR=${{ steps.common-version.outputs.cuda_major }}
             CUDA_MINOR=${{ steps.common-version.outputs.cuda_minor }}
@@ -445,7 +445,7 @@ jobs:
             CACHE_BUSTER=${{ steps.cache_buster_timestamp.outputs.cache_buster_timestamp }}
             TARGETOS=${{ matrix.os }}
             TARGETPLATFORM=${{ matrix.platform }}
-            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu20.04' || matrix.base_image_suffix }}
+            BUILD_BASE_IMAGE_SUFFIX=${{ matrix.os == 'ubuntu' && 'ubuntu24.04' || matrix.base_image_suffix }}
             FINAL_BASE_IMAGE_SUFFIX=${{ matrix.base_image_suffix }}
             CUDA_MAJOR=${{ steps.common-version.outputs.cuda_major }}
             CUDA_MINOR=${{ steps.common-version.outputs.cuda_minor }}
