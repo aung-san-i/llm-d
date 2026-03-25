@@ -76,6 +76,15 @@ ARG VLLM_USE_PRECOMPILED=0
 # ============================================================================
 FROM nvcr.io/nvidia/cuda:${CUDA_MAJOR}.${CUDA_MINOR}.${CUDA_PATCH}-devel-${BUILD_BASE_IMAGE_SUFFIX} AS builder
 
+ARG https_proxy
+ARG http_proxy
+ARG no_proxy
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+ENV no_proxy=${no_proxy}
+ENV HTTP_PROXY=${http_proxy}
+ENV HTTPS_PROXY=${https_proxy}
+ENV NO_PROXY=${no_proxy}
 ARG CACHE_BUSTER
 RUN if [ -n "${CACHE_BUSTER}" ]; then \
         echo "$CACHE_BUSTER" > /tmp/builder-buster; \
@@ -152,6 +161,8 @@ RUN --mount=type=secret,id=aws_access_key_id \
     rm -f /tmp/install-sccache.sh
 
 # Install uv and setup Python virtual environment
+# Configure pip to use proxy
+RUN pip config set global.proxy ${http_proxy}
 RUN export UV_INSTALL_DIR=/usr/local/bin && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv venv /opt/vllm --python ${PYTHON_VERSION} && \
@@ -258,6 +269,9 @@ ARG INFINISTORE_VERSION
 ARG LMCACHE_REPO
 ARG LMCACHE_VERSION
 COPY docker/scripts/cuda/builder/build-lmcache.sh /tmp/build-lmcache.sh
+# Configure git to use proxy
+RUN if [ -n "${http_proxy}" ]; then git config --global http.proxy ${http_proxy}; fi && \
+    if [ -n "${https_proxy}" ]; then git config --global https.proxy ${https_proxy}; fi
 RUN --mount=type=cache,target=/var/cache/git \
     --mount=type=secret,id=aws_access_key_id \
     --mount=type=secret,id=aws_secret_access_key \
@@ -289,6 +303,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ============================================================================
 FROM nvcr.io/nvidia/cuda:${CUDA_MAJOR}.${CUDA_MINOR}.${CUDA_PATCH}-runtime-${FINAL_BASE_IMAGE_SUFFIX} AS runtime
 
+ARG https_proxy
+ARG http_proxy
+ARG no_proxy
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+ENV no_proxy=${no_proxy}
+ENV HTTP_PROXY=${http_proxy}
+ENV HTTPS_PROXY=${https_proxy}
+ENV NO_PROXY=${no_proxy}
 ARG CACHE_BUSTER
 RUN if [ -n "${CACHE_BUSTER}" ]; then \
         echo "$CACHE_BUSTER" > /tmp/builder-buster; \
@@ -412,6 +435,8 @@ RUN if [ -d /opt/nixl/include ]; then \
     rm -rf /opt/nixl
 
 # Install uv and setup Python virtual environment
+# Configure pip to use proxy
+# RUN pip config set global.proxy ${http_proxy}
 RUN export UV_INSTALL_DIR=/usr/local/bin && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv venv /opt/vllm --python ${PYTHON_VERSION} && \
