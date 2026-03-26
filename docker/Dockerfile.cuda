@@ -1,20 +1,25 @@
+ARG CUDA_MAJOR=12
+ARG CUDA_MINOR=9
+ARG CUDA_PATCH=1
+ARG TARGETOS=rhel
+ARG BASE_IMAGE_SUFFIX=ubi9
+
 # Important: For Ubuntu builds, we use an older version (20.04) in the build stage
 # to maintain broad glibc compatibility. Binaries built with newer glibc versions
 # are not backwards compatible with OSes using earlier glibc versions.
 # Runtime stage can use newer Ubuntu (22.04) for updated dependencies.
 # See: https://github.com/vllm-project/vllm/blob/main/docker/Dockerfile#L18-L24
-ARG BASE_IMAGE_SUFFIX=ubi9
 ARG BUILD_BASE_IMAGE_SUFFIX=${BASE_IMAGE_SUFFIX}
 ARG FINAL_BASE_IMAGE_SUFFIX=${BASE_IMAGE_SUFFIX}
 
 ######################## SYSTEM CONFIGURATION ########################
 
-# CUDA version - provided via build args from docker/common-versions file via GH workflow
 ARG CUDA_MAJOR=12
 ARG CUDA_MINOR=9
 ARG CUDA_PATCH=1
 ARG TARGETOS=rhel
 ARG TARGETPLATFORM=linux/amd64
+ARG BASE_IMAGE_SUFFIX=ubi9
 ARG PYTHON_VERSION=3.12
 
 ARG USE_SCCACHE=false
@@ -30,7 +35,7 @@ ARG ENABLE_EFA=false
 ARG EFA_INSTALLER_VERSION="1.46.0"
 
 ARG GDRCOPY_REPO="https://github.com/NVIDIA/gdrcopy.git"
-ARG GDRCOPY_VERSION="v2.5.2"
+ARG GDRCOPY_VERSION="v2.5.1"
 
 ARG UCX_REPO="https://github.com/openucx/ucx.git"
 ARG UCX_VERSION="v1.20.0"
@@ -41,13 +46,13 @@ ARG NVSHMEM_VERSION="v3.5.19-1"
 
 ARG BUILD_NIXL_FROM_SOURCE="true"
 ARG NIXL_REPO="https://github.com/ai-dynamo/nixl.git"
-ARG NIXL_VERSION="v1.0.0"
+ARG NIXL_VERSION="0.10.0"
 
 ARG INFINISTORE_REPO="https://github.com/bytedance/InfiniStore.git"
 ARG INFINISTORE_VERSION="0.2.33"
 
 ARG LMCACHE_REPO="https://github.com/LMCache/LMCache.git"
-ARG LMCACHE_VERSION="v0.4.1"
+ARG LMCACHE_VERSION="v0.3.14"
 
 # Kernels
 # NM fork of Deepep for duplicate nvshmem IBGDA definitions, see: https://github.com/deepseek-ai/DeepEP/pull/581.
@@ -61,15 +66,15 @@ ARG DEEPGEMM_REPO="https://github.com/deepseek-ai/DeepGEMM"
 ARG DEEPGEMM_VERSION="v2.1.1.post3"
 
 ARG FLASHINFER_REPO="https://github.com/flashinfer-ai/flashinfer.git"
-ARG FLASHINFER_VERSION="v0.6.4"
+ARG FLASHINFER_VERSION="v0.6.1"
 
-# vLLM build settings - provided via build args from docker/common-versions file
+# vLLM build settings - provided via build args from docker/vllm-version file
 # Override here for platform-specific testing or via build args
 ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
-ARG VLLM_COMMIT_SHA="1892993bc18e243e2c05841314c5e9c06a80c70d"
-ARG VLLM_PRECOMPILED_WHEEL_COMMIT="1892993bc18e243e2c05841314c5e9c06a80c70d"
+ARG VLLM_COMMIT_SHA="95c0f928cdeeaa21c4906e73cee6a156e1b3b995"
+ARG VLLM_PRECOMPILED_WHEEL_COMMIT="95c0f928cdeeaa21c4906e73cee6a156e1b3b995"
 ARG VLLM_PREBUILT=0
-ARG VLLM_USE_PRECOMPILED=0
+ARG VLLM_USE_PRECOMPILED=1
 
 # ============================================================================
 # BUILD STAGE - Install build dependencies and create wheels
@@ -295,7 +300,7 @@ COPY docker/scripts/cuda/builder/build-compiled-wheels.sh /tmp/build-compiled-wh
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=secret,id=aws_access_key_id \
     --mount=type=secret,id=aws_secret_access_key \
-    /tmp/build-compiled-wheels.sh && \
+    TARGETPLATFORM=${TARGETPLATFORM} /tmp/build-compiled-wheels.sh && \
     rm -f /tmp/build-compiled-wheels.sh
 
 # ============================================================================
