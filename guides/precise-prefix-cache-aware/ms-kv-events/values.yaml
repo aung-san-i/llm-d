@@ -62,6 +62,8 @@ decode:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace  # assumed to be the same as the EPP's
+        - name: VLLM_SERVER_DEV_MODE
+          value: '1'
         - name: POD_IP
           valueFrom:
             fieldRef:
