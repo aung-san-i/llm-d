@@ -35,9 +35,6 @@ decode:
       path: "/metrics"
       interval: "30s"
   initContainers:
-    # UDS Tokenizer sidecar - handles tokenization via gRPC over Unix Domain Socket
-    # restartPolicy: Always makes this a native sidecar (K8s 1.29+):
-    # vllm will not start until this container's readinessProbe passes
     - name: uds-tokenizer
       image: ghcr.io/llm-d/llm-d-uds-tokenizer:v0.7.0
       imagePullPolicy: IfNotPresent
@@ -104,7 +101,6 @@ decode:
   volumes:
     - name: metrics-volume
       emptyDir: {}
-    # Shared volume for Unix Domain Socket communication between the simulator and UDS tokenizer
     - name: uds-socket
       emptyDir: {}
 
@@ -118,9 +114,6 @@ prefill:
       path: "/metrics"
       interval: "30s"
   initContainers:
-    # UDS Tokenizer sidecar - handles tokenization via gRPC over Unix Domain Socket
-    # restartPolicy: Always makes this a native sidecar (K8s 1.29+):
-    # vllm will not start until this container's readinessProbe passes
     - name: uds-tokenizer
       image: ghcr.io/llm-d/llm-d-uds-tokenizer:v0.7.0
       imagePullPolicy: IfNotPresent
@@ -187,7 +180,6 @@ prefill:
   volumes:
     - name: metrics-volume
       emptyDir: {}
-    # Shared volume for Unix Domain Socket communication between the simulator and UDS tokenizer
     - name: uds-socket
       emptyDir: {}
 
