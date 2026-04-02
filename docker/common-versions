@@ -2,7 +2,7 @@
 # shared vLLM Version Configuration
 # ============================================================================
 VLLM_REPO=https://github.com/vllm-project/vllm.git
-VLLM_COMMIT_SHA=95c0f928cdeeaa21c4906e73cee6a156e1b3b995 # maps to v0.17.1 tag
+VLLM_COMMIT_SHA=bcf2be96120005e9aea171927f85055a6a5c0cf6 # maps to v0.17.1 tag
 
 # ============================================================================
 # Cuda specific configs
@@ -15,20 +15,19 @@ VLLM_PREBUILT=0                # 0=editable install, 1=use full prebuilt wheel
 VLLM_USE_PRECOMPILED=1         # 1=use precompiled binaries either from VLLM_COMMIT_SHA or VLLM_PRECOMPILED_WHEEL_COMMIT, 0=compile from source
 # If building vLLM from a precompiled commit in the vLLM wheel index (only commits off main),
 # which commit to use as the base for the copiled bits.
-VLLM_PRECOMPILED_WHEEL_COMMIT=95c0f928cdeeaa21c4906e73cee6a156e1b3b995
+VLLM_PRECOMPILED_WHEEL_COMMIT=bcf2be96120005e9aea171927f85055a6a5c0cf6
 
 ### Cuda Runtime versions
 CUDA_MAJOR=12
 CUDA_MINOR=9
 CUDA_PATCH=1
 
-
 ### Offloading connector
-LLM_D_OFFLOADING_CONNECTOR_VERSION=0.17.1
+LLM_D_OFFLOADING_CONNECTOR_VERSION=0.18.0
 
 # ============================================================================
 # XPU specific settings
 # ============================================================================
 
 # XPU vLLM version / commit sha
-VLLM_XPU_COMMIT_SHA=9dd656f0ea06ba452e1f26666c111ea4909cd488 # maps to v0.18.0rc2 tag for XPU RDMA support
+VLLM_XPU_COMMIT_SHA=bcf2be96120005e9aea171927f85055a6a5c0cf6 # maps to v0.18.0
