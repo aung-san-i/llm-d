@@ -3,7 +3,7 @@
 # ============================================================================
 # Used by CUDA and CPU platforms
 VLLM_REPO=https://github.com/vllm-project/vllm.git
-VLLM_COMMIT_SHA=1892993bc18e243e2c05841314c5e9c06a80c70d
+VLLM_COMMIT_SHA=5e30e9b9a9b0dc91927f2ec4ffbd92c4af3825c0
 
 # CUDA-only configurations for precompiled binaries
 VLLM_PREBUILT=0                # 0=editable install, 1=use full prebuilt wheel

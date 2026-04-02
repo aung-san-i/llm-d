@@ -29,7 +29,15 @@ cd /tmp
 . "${VIRTUAL_ENV}/bin/activate"
 
 if [ "${USE_SCCACHE}" = "true" ]; then
-    export CC="sccache gcc" CXX="sccache g++" NVCC="sccache nvcc"
+    # Use symlink wrappers instead of CC="sccache gcc" to avoid cmake subproject
+    # failures (e.g. prometheus-cpp) where cmake invokes sccache directly with
+    # compiler flags like -E that sccache doesn't understand.
+    WRAPDIR=/tmp/sccache-wrappers
+    mkdir -p "$WRAPDIR"
+    ln -sf "$(command -v sccache)" "$WRAPDIR/gcc"
+    ln -sf "$(command -v sccache)" "$WRAPDIR/g++"
+    ln -sf "$(command -v sccache)" "$WRAPDIR/nvcc"
+    export PATH="$WRAPDIR:$PATH"
 fi
 
 git clone "${NIXL_REPO}" nixl && cd nixl
