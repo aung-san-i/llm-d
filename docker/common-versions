@@ -23,7 +23,7 @@ CUDA_MINOR=9
 CUDA_PATCH=1
 
 ### Offloading connector
-LLM_D_OFFLOADING_CONNECTOR_VERSION=0.18.0
+LLM_D_OFFLOADING_CONNECTOR_VERSION=0.18
 
 # ============================================================================
 # XPU specific settings
