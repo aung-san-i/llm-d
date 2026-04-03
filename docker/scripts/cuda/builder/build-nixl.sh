@@ -29,18 +29,9 @@ cd /tmp
 . "${VIRTUAL_ENV}/bin/activate"
 
 if [ "${USE_SCCACHE}" = "true" ]; then
-    # Use symlink wrappers instead of CC="sccache gcc" to avoid cmake subproject
-    # failures (e.g. prometheus-cpp) where cmake invokes sccache directly with
-    # compiler flags like -E that sccache doesn't understand.
-    # Also unset CMAKE_*_COMPILER_LAUNCHER vars set by setup-sccache.sh since
-    # meson reads those and prepends sccache to the compiler path, breaking CUDA.
+    # Meson reads CMAKE_*_COMPILER_LAUNCHER and prepends sccache to compiler
+    # paths, which breaks CUDA detection. Disable sccache for the meson build.
     unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER
-    WRAPDIR=/tmp/sccache-wrappers
-    mkdir -p "$WRAPDIR"
-    ln -sf "$(command -v sccache)" "$WRAPDIR/gcc"
-    ln -sf "$(command -v sccache)" "$WRAPDIR/g++"
-    ln -sf "$(command -v sccache)" "$WRAPDIR/nvcc"
-    export PATH="$WRAPDIR:$PATH"
 fi
 
 git clone "${NIXL_REPO}" nixl && cd nixl
