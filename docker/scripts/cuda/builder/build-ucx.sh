@@ -26,12 +26,7 @@ git clone "${UCX_REPO}" ucx && cd ucx
 git checkout -q "${UCX_VERSION}"
 
 if [ "${USE_SCCACHE}" = "true" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER
-    WRAPDIR=/tmp/sccache-wrappers
-    mkdir -p "$WRAPDIR"
-    ln -sf "$(command -v sccache)" "$WRAPDIR/gcc"
-    ln -sf "$(command -v sccache)" "$WRAPDIR/g++"
-    export PATH="$WRAPDIR:$PATH"
+    export CC="sccache gcc" CXX="sccache g++"
 fi
 
 # Enable EFA support only for RHEL builds
