@@ -43,7 +43,12 @@ git clone "${GDRCOPY_REPO}" gdrcopy && cd gdrcopy
 git checkout -q "${GDRCOPY_VERSION}"
 
 if [ "${USE_SCCACHE}" = "true" ]; then
-    export CC="sccache gcc" CXX="sccache g++"
+    unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_CUDA_COMPILER_LAUNCHER
+    WRAPDIR=/tmp/sccache-wrappers
+    mkdir -p "$WRAPDIR"
+    ln -sf "$(command -v sccache)" "$WRAPDIR/gcc"
+    ln -sf "$(command -v sccache)" "$WRAPDIR/g++"
+    export PATH="$WRAPDIR:$PATH"
 fi
 
 ARCH="${UUARCH}" PREFIX=/usr/local DESTLIB=/usr/local/lib make lib_install
