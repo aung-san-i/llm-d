@@ -144,15 +144,16 @@ if [ "${SUPPRESS_PYTHON_OUTPUT}" = "true" ] || [ "${SUPPRESS_PYTHON_OUTPUT}" = "
   VERBOSE_FLAG=""
 fi
 
-# Pre-install torch so nvidia CUDA pip packages (nvrtc, etc.) are in the virtualenv
-# before vLLM's cmake runs. CUDA 13 distributes these as pip packages rather than
-# including them in the runtime base image.
+# Pre-install torch so nvidia CUDA pip packages (nvrtc, etc.) are in the virtualenv.
+# CUDA 13 distributes these as pip packages rather than including them in the base image.
 uv pip install torch
-# Make pip-installed nvidia libraries visible to cmake's find_library
+# Make pip-installed nvidia libraries visible to cmake's find_library (used by vLLM's
+# cmake during source builds). CMAKE_LIBRARY_PATH is checked by find_library; plain
+# LIBRARY_PATH is not.
 NVIDIA_PKGS="${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/nvidia"
 if [ -d "${NVIDIA_PKGS}" ]; then
   for libdir in "${NVIDIA_PKGS}"/*/lib; do
-    [ -d "$libdir" ] && export LIBRARY_PATH="${libdir}:${LIBRARY_PATH:-}"
+    [ -d "$libdir" ] && export CMAKE_LIBRARY_PATH="${libdir}:${CMAKE_LIBRARY_PATH:-}"
   done
 fi
 
