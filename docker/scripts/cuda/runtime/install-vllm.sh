@@ -143,6 +143,19 @@ VERBOSE_FLAG="-v"
 if [ "${SUPPRESS_PYTHON_OUTPUT}" = "true" ] || [ "${SUPPRESS_PYTHON_OUTPUT}" = "1" ]; then
   VERBOSE_FLAG=""
 fi
+
+# Pre-install torch so nvidia CUDA pip packages (nvrtc, etc.) are in the virtualenv
+# before vLLM's cmake runs. CUDA 13 distributes these as pip packages rather than
+# including them in the runtime base image.
+uv pip install torch
+# Make pip-installed nvidia libraries visible to cmake's find_library
+NVIDIA_PKGS="${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/nvidia"
+if [ -d "${NVIDIA_PKGS}" ]; then
+  for libdir in "${NVIDIA_PKGS}"/*/lib; do
+    [ -d "$libdir" ] && export LIBRARY_PATH="${libdir}:${LIBRARY_PATH:-}"
+  done
+fi
+
 uv pip install ${VERBOSE_FLAG} "${INSTALL_PACKAGES[@]}" \
   --extra-index-url "https://flashinfer.ai/whl/${CUDA_SHORT_VERSION}"
 
