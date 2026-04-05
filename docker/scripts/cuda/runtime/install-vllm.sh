@@ -148,18 +148,22 @@ fi
 # CUDA 13 distributes these as pip packages rather than including them in the base image.
 uv pip install torch
 # Symlink pip-installed nvidia libraries into /usr/local/cuda/lib64/ so cmake can find
-# them during vLLM source builds. uv's build isolation runs cmake in a subprocess with
-# a temp directory, so env vars like CMAKE_LIBRARY_PATH don't reliably reach it.
-NVIDIA_PKGS="${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/nvidia"
-if [ -d "${NVIDIA_PKGS}" ]; then
-  for libdir in "${NVIDIA_PKGS}"/*/lib; do
-    if [ -d "$libdir" ]; then
-      for lib in "$libdir"/*.so*; do
-        [ -f "$lib" ] && ln -sf "$lib" "/usr/local/cuda/lib64/$(basename "$lib")" 2>/dev/null || true
+# them during vLLM source builds. Check both lib/ and lib64/ (RHEL uses lib64).
+echo "DEBUG: Looking for nvidia libs in ${VIRTUAL_ENV}/{lib,lib64}/python${PYTHON_VERSION}/site-packages/nvidia/"
+for pylib in lib lib64; do
+  NVIDIA_PKGS="${VIRTUAL_ENV}/${pylib}/python${PYTHON_VERSION}/site-packages/nvidia"
+  if [ -d "${NVIDIA_PKGS}" ]; then
+    echo "DEBUG: Found nvidia packages at ${NVIDIA_PKGS}"
+    find "${NVIDIA_PKGS}" -name "*.so*" -type f -exec sh -c '
+      for lib; do
+        echo "DEBUG: Symlinking $(basename "$lib")"
+        ln -sf "$lib" "/usr/local/cuda/lib64/$(basename "$lib")"
       done
-    fi
-  done
-fi
+    ' _ {} +
+  fi
+done
+echo "DEBUG: nvrtc in /usr/local/cuda/lib64/:"
+ls /usr/local/cuda/lib64/libnvrtc* 2>/dev/null || echo "DEBUG: no nvrtc found"
 
 uv pip install ${VERBOSE_FLAG} "${INSTALL_PACKAGES[@]}" \
   --extra-index-url "https://flashinfer.ai/whl/${CUDA_SHORT_VERSION}"
