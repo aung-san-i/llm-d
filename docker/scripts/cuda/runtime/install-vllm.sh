@@ -144,27 +144,6 @@ if [ "${SUPPRESS_PYTHON_OUTPUT}" = "true" ] || [ "${SUPPRESS_PYTHON_OUTPUT}" = "
   VERBOSE_FLAG=""
 fi
 
-# Pre-install torch so nvidia CUDA pip packages (nvrtc, etc.) are in the virtualenv.
-# CUDA 13 distributes these as pip packages rather than including them in the base image.
-uv pip install torch
-# Symlink pip-installed nvidia libraries into /usr/local/cuda/lib64/ so cmake can find
-# them during vLLM source builds. Check both lib/ and lib64/ (RHEL uses lib64).
-echo "DEBUG: Looking for nvidia libs in ${VIRTUAL_ENV}/{lib,lib64}/python${PYTHON_VERSION}/site-packages/nvidia/"
-for pylib in lib lib64; do
-  NVIDIA_PKGS="${VIRTUAL_ENV}/${pylib}/python${PYTHON_VERSION}/site-packages/nvidia"
-  if [ -d "${NVIDIA_PKGS}" ]; then
-    echo "DEBUG: Found nvidia packages at ${NVIDIA_PKGS}"
-    find "${NVIDIA_PKGS}" -name "*.so*" -type f -exec sh -c '
-      for lib; do
-        echo "DEBUG: Symlinking $(basename "$lib")"
-        ln -sf "$lib" "/usr/local/cuda/lib64/$(basename "$lib")"
-      done
-    ' _ {} +
-  fi
-done
-echo "DEBUG: nvrtc in /usr/local/cuda/lib64/:"
-ls /usr/local/cuda/lib64/libnvrtc* 2>/dev/null || echo "DEBUG: no nvrtc found"
-
 uv pip install ${VERBOSE_FLAG} "${INSTALL_PACKAGES[@]}" \
   --extra-index-url "https://flashinfer.ai/whl/${CUDA_SHORT_VERSION}"
 
