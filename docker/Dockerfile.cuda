@@ -359,13 +359,16 @@ RUN /tmp/install-runtime-packages.sh && \
     rm -f /tmp/install-runtime-packages.sh /tmp/package-utils.sh && \
     rm -rf /tmp/packages
 
-# Install CUDA devel libraries needed for vLLM source builds (nvrtc, nvJitLink).
+# Install CUDA devel libraries needed for vLLM source builds.
 # The runtime base image only ships runtime .so files; cmake needs the unversioned
-# linker symlinks that the -devel packages provide.
+# linker symlinks and stubs (cuda_driver, nvrtc, etc.) that the -devel packages provide.
 RUN if [ "${TARGETOS}" = "ubuntu" ]; then \
-        apt-get update -qq && apt-get install -y cuda-nvrtc-dev-${CUDA_MAJOR}-${CUDA_MINOR} && rm -rf /var/lib/apt/lists/*; \
+        apt-get update -qq && \
+        apt-get install -y cuda-cudart-dev-${CUDA_MAJOR}-${CUDA_MINOR} cuda-nvrtc-dev-${CUDA_MAJOR}-${CUDA_MINOR} cuda-driver-dev-${CUDA_MAJOR}-${CUDA_MINOR} && \
+        rm -rf /var/lib/apt/lists/*; \
     else \
-        dnf install -y cuda-nvrtc-devel-${CUDA_MAJOR}-${CUDA_MINOR} && dnf clean all; \
+        dnf install -y cuda-cudart-devel-${CUDA_MAJOR}-${CUDA_MINOR} cuda-nvrtc-devel-${CUDA_MAJOR}-${CUDA_MINOR} cuda-driver-devel-${CUDA_MAJOR}-${CUDA_MINOR} && \
+        dnf clean all; \
     fi
 
 # Copy in storage offloading connector wheel
