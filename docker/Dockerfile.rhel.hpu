@@ -238,7 +238,6 @@ RUN dnf update -y curl-minimal libcurl-minimal glib2 \
     systemd systemd-libs systemd-pam \
     libxml2 openldap p11-kit p11-kit-trust tar \
     git git-core git-core-doc \
-    sqlite-libs && \
     dnf update -y --allowerasing --skip-broken --nobest && \
     dnf remove -y gdb gdb-gdbserver gdb-headless \
     wget git git-core git-core-doc gettext jq \
@@ -249,7 +248,7 @@ RUN dnf update -y curl-minimal libcurl-minimal glib2 \
 
 # Setup non-root user for OpenShift compatibility
 RUN umask 002 && \
-    useradd --uid 2000 --gid 0 vllm && \
+    useradd -m --uid 2000 --gid 0 vllm && \
     chmod g+rwx /home/vllm /usr/src /workspace && \
     chmod -R g+rwx /var/log/habana_logs
 
