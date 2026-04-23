@@ -1,6 +1,7 @@
 inferenceExtension:
   replicas: 1
   flags:
+    v: 4
   image:
     name: llm-d-inference-scheduler
     hub: ghcr.io/llm-d

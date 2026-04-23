@@ -1,6 +1,7 @@
 inferenceExtension:
   replicas: 1
   flags:
+    v: 4
   image:
     name: llm-d-inference-scheduler
     hub: ghcr.io/llm-d
@@ -18,12 +19,9 @@ inferenceExtension:
       - type: disagg-headers-handler
       - type: prefix-based-pd-decider
         parameters:
-          nonCachedTokens: 0
+          nonCachedTokens: 1
       - type: disagg-profile-handler
         parameters:
-          profiles:
-            prefill: prefill
-            decode: decode
           deciders:
             prefill: prefix-based-pd-decider
       - type: prefill-filter
@@ -48,7 +46,9 @@ inferenceExtension:
         plugins:
         - pluginRef: decode-filter
         - pluginRef: active-request-scorer
-          weight: 1
+          weight: 2
+        - pluginRef: prefix-cache-scorer
+          weight: 2
         - pluginRef: max-score-picker
 
   # Distributed tracing configuration (OpenTelemetry)
@@ -72,5 +72,4 @@ inferencePool:
   modelServerType: vllm
   modelServers:
     matchLabels:
-      llm-d.ai/inference-serving: "true"
       llm-d.ai/guide: "pd-disaggregation"

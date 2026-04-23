@@ -5,7 +5,7 @@ resources:
 
 # To disable monitoring comment the following component out
 components:
-  - ../../../../recipes/modelserver/components/monitoring
+  - ../../../../recipes/modelserver/components/monitoring-pd
 
 namePrefix: pd-nvidia-gpu-vllm-
 
@@ -17,7 +17,7 @@ images:
 labels:
   - pairs:
       llm-d.ai/model: gpt-oss-120b
-      llm-d.ai/guide: pd
+      llm-d.ai/guide: pd-disaggregation
       llm-d.ai/accelerator-variant: gpu
       llm-d.ai/accelerator-vendor: nvidia
     includeSelectors: true

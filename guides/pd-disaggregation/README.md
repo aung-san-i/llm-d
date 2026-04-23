@@ -1,11 +1,24 @@
-helm install pd-epp \
+```
+kustomize build guides/pd-disaggregation/modelserver/nvidia-gpu/vllm/ | kubectl apply -n rob-dev -f -
+```
+
+```
+helm install pd-disaggregation \
   oci://registry.k8s.io/gateway-api-inference-extension/charts/standalone \
   -f guides/recipes/scheduler/base.values.yaml \
   -f guides/recipes/scheduler/features/monitoring.values.yaml \
   -f guides/pd-disaggregation/scheduler/values.yaml \
   -n rob-dev \
   --version v1.4.0
+```
 
+kubectl exec curl -- curl -i http://pd-disaggregation-epp:8081/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-120b",
+    "messages": [{"role":"user","content":"I am setting up a distributed LLM inference system on Kubernetes using the llm-d project with prefill-decode disaggregation. The architecture splits the forward pass into two stages: prefill pods process the input prompt and populate the KV cache, while decode pods handle the autoregressive token generation using that cache. A gateway sits in front, and an endpoint picker extension uses a plugin-based scheduler to decide which pods should serve each request. The scheduler evaluates prefix cache hits, active request counts, and queue depths to make routing decisions. Requests with long prompts benefit most from this split because prefill is compute-bound while decode is memory-bound, so running them on separately scaled pools improves utilization. With that context in mind, please explain in detail how KV cache transfer works between prefill and decode pods in such a system, what network protocols are typically used for that transfer, how the system handles cache invalidation when a decode pod evicts blocks, and what the tradeoffs are between co-locating prefill and decode versus fully disaggregating them. Please be thorough and technical in your response."}],
+    "max_tokens": 300
+  }'
 
 # Well-lit Path: P/D Disaggregation
 
