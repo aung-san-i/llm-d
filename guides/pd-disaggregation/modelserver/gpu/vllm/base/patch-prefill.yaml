@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: prefill
 spec:
-  replicas: 4
+  replicas: 8
   template:
     spec:
       containers:
@@ -14,18 +14,18 @@ spec:
             - "openai/gpt-oss-120b"
             - "--disable-access-log-for-endpoints=/health,/metrics,/v1/models"
             - "--tensor-parallel-size=1"
-            - "--block-size"
-            - "128"
+            - "--block-size=128"
             - "--kv-transfer-config"
             - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
-            # Uncomment for distributed tracing
-            # - "--otlp-traces-endpoint=http://otel-collector:4317"
-            # - "--collect-detailed-traces=all"
+            - "--no-disable-hybrid-kv-cache-manager"
+            - "--gpu-memory-utilization=0.9"
           env:
             - name: VLLM_NIXL_SIDE_CHANNEL_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: UCX_MODULE_DIR
+              value: /usr/local/lib/python3.12/dist-packages/nixl_cu12.libs/ucx
           #   # Uncomment for distributed tracing env vars
           #   - name: OTEL_SERVICE_NAME
           #     value: "vllm-decode"
@@ -39,11 +39,11 @@ spec:
           #     value: "0.1"
           resources:
             limits:
-              cpu: "4"
+              cpu: "8"
               memory: 16Gi
               nvidia.com/gpu: "1"
             requests:
-              cpu: "4"
+              cpu: "8"
               memory: 16Gi
               nvidia.com/gpu: "1"
           volumeMounts:
