@@ -199,7 +199,7 @@ For more details, refer to the [benchmark instructions doc](../../helpers/benchm
 ### 2. Download the Workload Template
 
 ```bash
-curl -LJO "https://raw.githubusercontent.com/llm-d/llm-d/main/guides/pd-disaggregation/benchmark-templates/guide.yaml"
+curl -LJO "https://raw.githubusercontent.com/llm-d/llm-d/main/guides/pd-disaggregation/benchmark-templates/20_1_isl_osl.yaml"
 ```
 
 ### 3. Execute Benchmark
@@ -233,6 +233,12 @@ helm uninstall ${GUIDE_NAME} -n ${NAMESPACE}
 kubectl delete -n ${NAMESPACE} -k guides/optimized-baseline/modelserver/gpu/vllm/${INFRA_PROVIDER}
 ```
 
+## Benchmarking Report
+
+The benchmark is running on 16 H200 GPUs (with Infinband on CKS).
+
+### TODO: re-run
+
 ## Comparing llm-d P/D disaggregation to a k8s service
 
 The following scripts run the same benchmark against a standard deployment and service running `openai/gpt-oss-120b`.
@@ -249,8 +255,8 @@ kubectl apply -n ${NAMESPACE} -f guides/pd-disaggregation/baseline/manifest.yaml
 
 ```bash
 export STACK_NAME=baseline
-export IP_ADDR=$(kubectl get service baseline -n ${NAMESPACE} -o jsonpath='{.spec.clusterIP}')
-envsubst < guide.yaml > config-baseline.yaml
+export IP=$(kubectl get service baseline -n ${NAMESPACE} -o jsonpath='{.spec.clusterIP}')
+envsubst < 20_1_isl_osl.yaml > config-baseline.yaml
 ./run_only.sh -c config-baseline.yaml -o ./results-baseline
 ```
 
