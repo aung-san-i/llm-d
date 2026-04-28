@@ -232,7 +232,7 @@ kubectl apply -f guides/pd-disaggregation/baseline/manifest.yaml
 export STACK_NAME=baseline
 export IP_ADDR=$(kubectl get service baseline -o jsonpath='{.spec.clusterIP}')
 envsubst < guide.yaml > config-baseline.yaml
-./run_only.sh -c config-baseline.yaml -o ./results
+./run_only.sh -c config-baseline.yaml -o ./results-baseline
 ```
 
 </details>
