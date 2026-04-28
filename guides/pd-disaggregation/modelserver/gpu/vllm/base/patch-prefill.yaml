@@ -28,17 +28,6 @@ spec:
           #   # the following env var to fix it if using the cu129 build.
           #   - name: UCX_MODULE_DIR
           #    value: /usr/local/lib/python3.12/dist-packages/nixl_cu12.libs/ucx
-          #   # Uncomment for distributed tracing env vars
-          #   - name: OTEL_SERVICE_NAME
-          #     value: "vllm-decode"
-          #   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          #     value: "http://otel-collector:4317"
-          #   - name: OTEL_TRACES_EXPORTER
-          #     value: "otlp"
-          #   - name: OTEL_TRACES_SAMPLER
-          #     value: "parentbased_traceidratio"
-          #   - name: OTEL_TRACES_SAMPLER_ARG
-          #     value: "0.1"
           resources:
             limits:
               cpu: "8"
