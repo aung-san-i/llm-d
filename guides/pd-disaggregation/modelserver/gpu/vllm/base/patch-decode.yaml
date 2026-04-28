@@ -9,7 +9,6 @@ spec:
       containers:
         - name: modelserver
           command: ["vllm", "serve"]
-          # Include all args in overlay patch for consistency
           args:
             - "openai/gpt-oss-120b"
             - "--disable-access-log-for-endpoints=/health,/metrics,/v1/models"
@@ -24,19 +23,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: UCX_MODULE_DIR
-              value: /usr/local/lib/python3.12/dist-packages/nixl_cu12.libs/ucx
-          #   # Uncomment for distributed tracing env vars
-          #   - name: OTEL_SERVICE_NAME
-          #     value: "vllm-decode"
-          #   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          #     value: "http://otel-collector:4317"
-          #   - name: OTEL_TRACES_EXPORTER
-          #     value: "otlp"
-          #   - name: OTEL_TRACES_SAMPLER
-          #     value: "parentbased_traceidratio"
-          #   - name: OTEL_TRACES_SAMPLER_ARG
-          #     value: "0.1"
+          #   # vLLM has a bug on cu129 in v0.20 where wrong UCX transport
+          #   # (https://github.com/vllm-project/vllm/issues/41048). Uncomment
+          #   # the following env var to fix it if using the cu129 build.
+          #   - name: UCX_MODULE_DIR
+          #     value: /usr/local/lib/python3.12/dist-packages/nixl_cu12.libs/ucx
           resources:
             limits:
               cpu: "16"

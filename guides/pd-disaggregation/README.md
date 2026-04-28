@@ -111,8 +111,9 @@ Apply the Kustomize overlays for your specific backend (defaulting to NVIDIA GPU
 
 > [!NOTE]
 > The Kuberentes ecosystem has not yet standardized on how to expose
-> NICs to pods. So we provide some pre-configured setups for certain
-> Kuberentes providers.
+> NICs to pods. We provide some pre-configured setups for certain
+> Kuberentes providers. You may need to adapt the guides for the
+> specifics of your infrastructure provider.
 
 ```bash
 export INFRA_PROVIDER=base
@@ -120,7 +121,7 @@ export INFRA_PROVIDER=base
 kubectl apply -k guides/${GUIDE_NAME}/modelserver/gpu/vllm/${INFRA_PROVIDER}
 ```
 
-### 3. Enable monitoring (optional)
+### 3. Enable Monitoring (optional)
 
 > [!NOTE]
 > GKE provides [automatic application monitoring](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/configure-automatic-application-monitoring) out of the box. The llm-d [Monitoring stack](../../docs/monitoring/README.md) is not required for GKE, but it is available if you prefer to use it.
@@ -134,7 +135,7 @@ kubectl apply -k guides/recipes/modelserver/components/monitoring-pd
 
 ## Verification
 
-### 1. Get the IP of the Scheduler
+### 1. Get the IP of the Proxy
 
 **Standalone Mode**
 
@@ -150,7 +151,7 @@ export IP=$(kubectl get gateway llm-d-inference-gateway -o jsonpath='{.status.ad
 ```
 </details>
 
-### 2. Send Test Requests
+### 2. Send Test Request
 
 **Open a temporary interactive shell inside the cluster:**
 
