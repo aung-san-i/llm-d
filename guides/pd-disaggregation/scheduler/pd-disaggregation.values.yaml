@@ -1,3 +1,4 @@
+
 inferenceExtension:
   replicas: 1
   flags:

@@ -33,14 +33,14 @@ As a result, as you tune your P/D deployments, we suggest focusing on the follow
 
 This guide includes configuration for the following accelerators:
 
-| Backend             | Directory                  | Notes                                      |
-| ------------------- | -------------------------- | ------------------------------------------ |
-| NVIDIA GPU (vLLM)   | `modelserver/gpu/vllm/`    | vLLM, tested nightly                       |
-| NVIDIA GPU (SGLang) | `modelserver/gpu/sglang/`  | SGLang, validated each release             |
-| Google TPU          | `modelserver/tpu/vllm/`    | GKE TPU, validated each release            |
-| AMD GPU             | `modelserver/amd/vllm/`    | AMD GPU, community contributed             |
-| Intel XPU           | `modelserver/xpu/vllm/`    | Intel Data Center GPU Max 1550+            |
-| Intel Gaudi (HPU)   | `modelserver/hpu/vllm/`    | Gaudi 1/2/3 with DRA support               |
+| Backend             | Directory                  | Notes                                                    |
+| ------------------- | -------------------------- | -------------------------------------------------------- |
+| NVIDIA GPU (vLLM)   | `modelserver/gpu/vllm/`    | vLLM, tested nightly                                     |
+| NVIDIA GPU (SGLang) | `modelserver/gpu/sglang/`  | SGLang, validated each release                           |
+| Google TPU          | `modelserver/tpu/vllm/`    | GKE TPU, validated each release                          |
+| AMD GPU             | `modelserver/amd/vllm/`    | AMD GPU, community contributed                           |
+| Intel XPU           | `modelserver/xpu/vllm/`    | Intel Data Center GPU Max 1550+, community contributed   |
+| Intel Gaudi (HPU)   | `modelserver/hpu/vllm/`    | Gaudi 1/2/3 with DRA support, community contributed      |
 
 > [!NOTE]
 > Some hardware variants use reduced configurations (fewer replicas, smaller models) to enable CI testing for compatibility and regression checks. These configurations are maintained by their respective hardware vendors and are not guaranteed as production-ready examples. Users deploying on non-default hardware should review and adjust the configurations for their environment.
