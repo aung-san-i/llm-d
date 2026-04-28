@@ -128,7 +128,7 @@ prefill:
     command: ["python3", "-m", "sglang.launch_server"]
     args:
       - "--model-path"
-      - "Qwen/Qwen3-14B"
+      - "ope/Qwen3-14B"
       - "--port"
       - "8000"
       - "--host"

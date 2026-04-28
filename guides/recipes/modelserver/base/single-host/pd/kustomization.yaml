@@ -8,11 +8,6 @@ configurations:
   - namereference.yaml
 
 patches:
-  # Add routing sidecar to the decode deployment
-  - path: patch-decode-deployment.yaml
-    target:
-      kind: Deployment
-      name: decode
   # Change decode modelserver port to 8200
   - target:
       kind: Deployment
