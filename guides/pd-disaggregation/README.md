@@ -173,7 +173,6 @@ kubectl run curl-debug --rm -it \
 ```bash
 curl -X POST http://${IP_ADDR}:8081/v1/completions \
     -H 'Content-Type: application/json' \
-    -H 'X-Gateway-Base-Model-Name: '"$GUIDE_NAME"'' \
     -d '{
         "model": '\"${MODEL_NAME}\"',
         "prompt": "How are you today?"
