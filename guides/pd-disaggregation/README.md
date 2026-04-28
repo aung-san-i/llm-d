@@ -20,9 +20,9 @@ improving interactivity. For a given ITL goal, P/D disaggregation can benefit ov
 
 However, P/D disaggregation is not a target for all workloads. We suggest exploring P/D disaggregation for workloads with:
 
-* Medium-large models (e.g. gpt-oss-120b+)
+* Medium-large models (e.g. gpt-oss-120b)
 * Longer input sequence lengths (e.g 10k ISL | 1k OSL, not 200 ISL | 200 OSL)
-* Sparse MoE architectures with opportunities for wide-EP
+* Sparse MoE architectures with opportunities for wide-ep
 
 As a result, as you tune your P/D deployments, we suggest focusing on the following parameters:
 
@@ -79,7 +79,7 @@ helm install ${GUIDE_NAME} \
     oci://registry.k8s.io/gateway-api-inference-extension/charts/standalone \
     -f guides/recipes/scheduler/base.values.yaml \
     -f guides/${GUIDE_NAME}/scheduler/${GUIDE_NAME}.values.yaml \
-    --version v1.4.0
+    --version ${GAIE_VERSION}
 ```
 
 <details>
@@ -100,7 +100,7 @@ helm install ${GUIDE_NAME} \
     --set experimentalHttpRoute.enabled=true \
     --set experimentalHttpRoute.inferenceGatewayName=llm-d-inference-gateway \
     --set experimentalHttpRoute.baseModel=${GUIDE_NAME} \
-    --version v1.4.0
+    --version ${GAIE_VERSION}
 ```
 
 </details>
@@ -116,7 +116,7 @@ Apply the Kustomize overlays for your specific backend (defaulting to NVIDIA GPU
 > specifics of your infrastructure provider.
 
 ```bash
-export INFRA_PROVIDER=base
+export INFRA_PROVIDER=base # coreweave, gke
 
 kubectl apply -k guides/${GUIDE_NAME}/modelserver/gpu/vllm/${INFRA_PROVIDER}
 ```
@@ -214,7 +214,7 @@ helm uninstall optimized-baseline -n ${NAMESPACE}
 kubectl delete -n ${NAMESPACE} -k guides/optimized-baseline/modelserver/gpu/vllm/
 ```
 
-## Compatin llm-d P/D disaggregation to a K8s Service
+## Compatin llm-d P/D disaggregation to a k8s service
 
 The following scripts run the same benchmark against a standard deployment and service running `openai/gpt-oss-120b`.
 
