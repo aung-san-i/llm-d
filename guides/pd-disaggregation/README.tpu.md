@@ -1,4 +1,4 @@
-# Google TPU P/D Disaggregation Deployment Guide
+# Google TPU
 
 ## Overview
 

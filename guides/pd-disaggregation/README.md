@@ -37,7 +37,7 @@ This guide includes configuration for the following accelerators:
 | ------------------- | -------------------------- | ------------------------------------------ |
 | NVIDIA GPU (vLLM)   | `modelserver/gpu/vllm/`    | vLLM, tested nightly                       |
 | NVIDIA GPU (SGLang) | `modelserver/gpu/sglang/`  | SGLang, validated each release             |
-| Google TPU          | `modelserver/tpu/vllm/`    | GKE TPU, validated each releas             |
+| Google TPU          | `modelserver/tpu/vllm/`    | GKE TPU, validated each release            |
 | AMD GPU             | `modelserver/amd/vllm/`    | AMD GPU, community contributed             |
 | Intel XPU           | `modelserver/xpu/vllm/`    | Intel Data Center GPU Max 1550+            |
 | Intel Gaudi (HPU)   | `modelserver/hpu/vllm/`    | Gaudi 1/2/3 with DRA support               |
