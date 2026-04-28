@@ -26,7 +26,7 @@ env:
     value: "4"
 
 workload:                         # yaml configuration for harness workload(s)
-  sanity_random:
+  random_20_1_isl_osl:
     load:
       type: constant
       stages:
@@ -34,15 +34,15 @@ workload:                         # yaml configuration for harness workload(s)
         duration: 120
         num_requests: null
         concurrency_level: null
-      - rate: 15.
-        duration: 120
-        num_requests: null
-        concurrency_level: null
       - rate: 25.
         duration: 120
         num_requests: null
         concurrency_level: null
-      - rate: 35.
+      - rate: 45.
+        duration: 120
+        num_requests: null
+        concurrency_level: null
+      - rate: 65.
         duration: 120
         num_requests: null
         concurrency_level: null
@@ -61,14 +61,14 @@ workload:                         # yaml configuration for harness workload(s)
     data:
       type: random
       input_distribution:
-        min: 10000
-        max: 10000
-        mean: 10000
+        min: 5000
+        max: 5000
+        mean: 5000
         std_dev: 0
       output_distribution:
-        min: 500
-        max: 500
-        mean: 500
+        min: 250
+        max: 250
+        mean: 250
         std_dev: 0
     report:
       request_lifecycle:
