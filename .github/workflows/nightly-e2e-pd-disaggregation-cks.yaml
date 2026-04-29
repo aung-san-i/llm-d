@@ -33,7 +33,7 @@ jobs:
         helm install pd-disaggregation \
           oci://registry.k8s.io/gateway-api-inference-extension/charts/standalone \
           -f guides/recipes/scheduler/base.values.yaml \
-          -f guides/pd-disaggregation/schedule/pd-disaggregation.values.yaml \
+          -f guides/pd-disaggregation/scheduler/pd-disaggregation.values.yaml \
           -n ${NAMESPACE} --version v1.4.0
       accelerator_type: H100
       required_gpus: 8
