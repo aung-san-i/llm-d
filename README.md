@@ -10,33 +10,48 @@ Achieve SOTA Inference Performance On Any Accelerator
 </h2>
 
  [![Documentation](https://img.shields.io/badge/Documentation-8A2BE2?logo=readthedocs&logoColor=white&color=1BC070)](https://www.llm-d.ai)
- [![Release Status](https://img.shields.io/badge/Version-0.6-yellow)](https://github.com/llm-d/llm-d/releases)
+ [![Release Status](https://img.shields.io/badge/Version-0.7-yellow)](https://github.com/llm-d/llm-d/releases)
  [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
  [![Join Slack](https://img.shields.io/badge/Join_Slack-blue?logo=slack)](https://llm-d.ai/slack)
 
-llm-d is a high-performance distributed inference serving stack optimized for production deployments on Kubernetes. We help you achieve the fastest "time to state-of-the-art (SOTA) performance" for key OSS large language models across most hardware accelerators and infrastructure providers with well-tested guides and real-world benchmarks.
+llm-d is a high-performance distributed inference serving stack for production deployments. We help you achieve the fastest "time to state-of-the-art (SOTA) performance" for key OSS large language models across most hardware accelerators and infrastructure providers with well-tested guides and real-world benchmarks.
 
 ## What does llm-d offer to production inference?
 
 Model servers like [vLLM](https://docs.vllm.ai) and [SGLang](https://github.com/sgl-project/sglang) handle efficiently running large language models on accelerators. llm-d provides state of the art orchestration above model servers to serve high-scale real world traffic efficiently and reliably:
 
-1. [optimized baseline](./guides/optimized-baseline/README.md) - Deploy [vLLM](https://docs.vllm.ai) behind a Gateway API-based load balancer enhanced with an [inference scheduler](https://github.com/llm-d/llm-d-inference-scheduler) to decrease serving latency and increase throughput with [prefix-cache aware routing](./guides/precise-prefix-cache-aware/README.md), utilization-based load balancing, fairness and prioritization for multi-tenant serving, and [predicted latency balancing (experimental)](./guides/predicted-latency-based-scheduling).
-2. [Disaggregated Serving (prefill/decode disaggregation)](./guides/pd-disaggregation/README.md) - Reduce time to first token (TTFT) and get more predictable time per output token (TPOT) by splitting inference into prefill servers handling prompts and decode servers handling responses, primarily on large models such as gpt-oss-120b and when processing very long prompts.
-3. [Wide Expert-Parallelism](./guides/wide-ep-lws/README.md) - Deploy very large Mixture-of-Experts (MoE) models like [DeepSeek-R1](https://github.com/vllm-project/vllm/issues/16037) for much higher throughput for RL and latency-insensitive workloads, using [Data Parallelism and Expert Parallelism](https://docs.vllm.ai/en/latest/serving/data_parallel_deployment.html) over fast accelerator networks.
+1. [Optimized Baseline](./guides/optimized-baseline/README.md) - Deploy [vLLM](https://docs.vllm.ai) behind a Gateway API-based load balancer enhanced with an [inference scheduler](https://github.com/llm-d/llm-d-inference-scheduler) to decrease serving latency and increase throughput with [prefix-cache aware routing](./guides/precise-prefix-cache-aware/README.md), utilization-based load balancing, fairness and prioritization for multi-tenant serving, and [predicted latency balancing](./guides/predicted-latency-based-scheduling).
+2. [Disaggregated Serving (prefill/decode disaggregation)](./guides/pd-disaggregation/README.md) - Reduce time to first token (TTFT) and get more predictable time per output token (TPOT) by splitting inference into prefill servers handling prompts and decode servers handling responses, primarily on large models (70B+ parameters) and when processing very long prompts.
+3. [Wide Expert-Parallelism](./guides/wide-ep-lws/README.md) - Deploy very large Mixture-of-Experts (MoE) models for much higher throughput for RL and latency-insensitive workloads, using [Data Parallelism and Expert Parallelism](https://docs.vllm.ai/en/latest/serving/data_parallel_deployment.html) over fast accelerator networks.
 4. [Tiered KV Prefix Caching with CPU and Storage Offload](./guides/tiered-prefix-cache/README.md) - Improve prefix cache hit rate by offloading KV-cache entries to CPU memory, local SSD, and remote high-performance filesystem storage.
 5. [Workload Autoscaling](./guides/workload-autoscaling/README.md) - Autoscale multi-model workloads on heterogeneous shared hardware with SLO-aware cost optimization using the [Workload Variant Autoscaler](./guides/workload-autoscaling/README.wva.md) or autoscale workloads on homogeneous hardware where each model scales independently using [HPA with EPP metrics](./guides/workload-autoscaling/README.hpa-epp.md).
 
 These [guides](./guides/README.md) provide tested and benchmarked recipes and Helm charts to start serving quickly with best practices common to production deployments. They are extensible and customizable for particulars of your models and use cases, using standard open source components like Kubernetes, Kubernetes Gateway API, NIXL, and vLLM. Our intent is to eliminate the heavy lifting common in tuning and deploying generative AI inference on modern accelerators.
 
+## Performance You Unlock
+
+Production-validated examples of performance gains from llm-d deployments:
+
+| Result | Context |
+|--------|---------|
+| **50k** tokens/sec cluster throughput | Wide Expert-Parallelism on MoE models, 16×16 NVIDIA B200 (3.1k tok/s per GPU) ([blog](https://llm-d.ai/blog/llm-d-v0.5-sustaining-performance-at-scale)) |
+| **13.9x** throughput improvement | Hierarchical KV offloading at 250 concurrent users vs GPU-only, 4× NVIDIA H100 + parallel filesystem ([blog](https://llm-d.ai/blog/llm-d-v0.5-sustaining-performance-at-scale)) |
+| **3x** higher output throughput | Prefix-cache aware routing vs round-robin, Llama 3.1 70B on 4× AMD MI300X ([blog](https://llm-d.ai/blog/production-grade-llm-inference-at-scale-kserve-llm-d-vllm)) |
+| **2x** faster time-to-first-token | Intelligent routing vs round-robin, Llama 3.1 70B on 4× AMD MI300X ([blog](https://llm-d.ai/blog/production-grade-llm-inference-at-scale-kserve-llm-d-vllm)) |
+| **40%** reduction in TTFT and ITL | Predicted-latency scheduling vs heuristics, Google Vertex AI production ([blog](https://llm-d.ai/blog/predicted-latency-based-scheduling-for-llms)) |
+| Sustained **~120k tok/s** under load | Intelligent scheduling maintains performance while round-robin degrades, Qwen3-32B on 16× NVIDIA H100 ([blog](https://llm-d.ai/blog/llm-d-v0.5-sustaining-performance-at-scale)) |
+
 ## Get Started Now
 
-We recommend new users start with a deployment of [optimized baseline](./guides/optimized-baseline/README.md).
+We recommend new users start with a deployment of [Optimized Baseline](./guides/optimized-baseline/README.md).
 
 > [!NOTE]
-> We are currently revamping our documentation. You can also preview [our new quickstarts](./docs/wip-docs-new/getting-started/quickstart.md), which will be formally released soon.
+> **New documentation available!** Explore our [revamped documentation](https://llm-d.ai/preview) with updated guides, architecture deep-dives, and API references.
 
 ### Latest News 🔥
 
+- [2026-04] The v0.7 release introduces an optimized baseline renamed and stabilized, kustomize-first migrated guides, expanded nightly CI (OpenShift, GKE, CoreWeave), predicted-latency scheduling GA, batch gateway (experimental), and revamped project-wide documentation.
+- [2026-04] The [v0.6](https://github.com/llm-d/llm-d/releases/tag/v0.6.0) release integrates DisaggregatedSet operator from Mistral AI, adds Prometheus metrics for predicted-latency scheduler, and expands TPU disaggregation support. Production deployments achieve 3x output throughput with prefix-cache aware routing.
 - [2026-02] The [v0.5](https://llm-d.ai/blog/llm-d-v0.5-sustaining-performance-at-scale) introduces reproducible benchmark workflows, hierarchical KV offloading, cache-aware LoRA routing, active-active HA, UCCL-based transport resilience, and scale-to-zero autoscaling; validated ~3.1k tok/s per B200 decode GPU (wide-EP) and up to 50k output tok/s on a 16×16 B200 prefill/decode topology with order-of-magnitude TTFT reduction vs round-robin baseline.
 - [2025-12] The [v0.4](https://llm-d.ai/blog/llm-d-v0.4-achieve-sota-inference-across-accelerators) release demonstrates 40% reduction in per output token latency for DeepSeek V3.1 on H200 GPUs, Intel XPU and Google TPU disaggregation support for lower time to first token, a new well-lit path for prefix cache offload to vLLM-native CPU memory tiering, and a preview of the workload variant autoscaler improving model-as-a-service efficiency.
 
@@ -46,7 +61,7 @@ We recommend new users start with a deployment of [optimized baseline](./guides/
 
 ## 🧱 Architecture
 
-llm-d accelerates distributed inference by integrating industry-standard open technologies: vLLM as default model server and engine, [Kubernetes Inference Gateway](https://gateway-api-inference-extension.sigs.k8s.io/) as control plane API and load balancing orchestrator, and Kubernetes as infrastructure orchestrator and workload control plane.
+llm-d accelerates distributed inference by integrating industry-standard open technologies: vLLM as default model server and engine, [Kubernetes Inference Gateway](https://gateway-api-inference-extension.sigs.k8s.io/) as control plane API and load balancing orchestrator, [LeaderWorkerSet](https://lws.sigs.k8s.io/) for multi-node orchestration, and Kubernetes as infrastructure orchestrator and workload control plane.
 
 <p align="center">
   <picture>
@@ -63,6 +78,8 @@ llm-d accelerates distributed inference by integrating industry-standard open te
 
 - [**Disaggregated Serving Sidecar:**](https://github.com/llm-d/llm-d-inference-scheduler/tree/main/cmd/pd-sidecar) llm-d orchestrates prefill and decode phases onto independent instances - the scheduler decides which instances should receive a given request, and the transaction is coordinated via a sidecar alongside decode instances. The sidecar instructs vLLM to provide point to point KV cache transfer over fast interconnects (IB/RoCE RDMA, TPU ICI, and DCN) via NIXL.
 
+- [**Multi-Node Orchestration:**](https://lws.sigs.k8s.io/) llm-d leverages [LeaderWorkerSet (LWS)](https://github.com/kubernetes-sigs/lws) for gang-scheduled multi-node deployments and the new DisaggregatedSet operator for managing prefill/decode topologies as first-class Kubernetes primitives, enabling Wide Expert-Parallelism and disaggregated serving at scale.
+
 - [**vLLM Native CPU Offloading**](https://docs.vllm.ai/en/latest/examples/basic/offline_inference/#cpu-offload) and [**llm-d filesystem backend**:](https://github.com/llm-d/llm-d-kv-cache/tree/main/kv_connectors/llmd_fs_backend) llm-d uses vLLM's KVConnector abstraction to configure a pluggable KV cache hierarchy, including offloading KVs to host, remote storage, and systems like LMCache, Mooncake, and KVBM. 
 
 - [**Variant Autoscaling over Hardware, Workload, and Traffic**](https://github.com/llm-d-incubation/ig-wva): A traffic- and hardware-aware autoscaler that (a) measures the capacity of each model server instance, (b) derive a load function that takes into account different request shapes and QoS, and (c) assesses recent traffic mix (QPS, QoS, and shapes) to calculate the optimal mix of instances to handle prefill, decode, and latency-tolerant requests, enabling use of HPA for SLO-level efficiency.
@@ -77,8 +94,8 @@ llm-d currently targets improving the production serving experience around:
   - Large language models (LLMs) with 1 billion or more parameters
   - Using most or all of the capacity of one or more hardware accelerators
   - Running in throughput, latency, or multiple-objective configurations
-- On recent generation datacenter-class accelerators - NVIDIA A100+, AMD MI250, Google TPU v5e or newer, and Intel GPU Max seriers or newer
-- On Kubernetes 1.29+, integrated via code into [Ray](https://docs.ray.io), or as a standalone service
+- On recent generation datacenter-class accelerators - NVIDIA A100+, AMD MI300X, Google TPU v5e or newer, and Intel GPU Max series or newer
+- On Kubernetes 1.30+, integrated via code into [Ray](https://docs.ray.io), or as a standalone service
 
 See the [accelerator docs](./docs/accelerators/README.md) for points of contact for more details about the accelerators, networks, and configurations tested and our [roadmap](https://github.com/llm-d/llm-d/issues/146) for what is coming next.
 
