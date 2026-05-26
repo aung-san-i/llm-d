@@ -371,7 +371,7 @@ RUN --mount=type=tmpfs,target=/tmp \
         echo "torch<2.10" > /tmp/torch-constraints.txt; \
     fi && \
     cd ${VLLM_SRC_DIR} && \
-    sed 's/^torch/#&/' requirements/build.txt > requirements/build_no_torch.txt && \
+    sed 's/^torch/#&/' requirements/build/cuda.txt > requirements/build_no_torch.txt && \
     pip install --no-cache-dir -r requirements/build_no_torch.txt && \
     PIP_CONSTRAINT=/tmp/torch-constraints.txt VLLM_TARGET_DEVICE=empty pip install --no-cache-dir --no-build-isolation . && \
     rm -rf ${VLLM_SRC_DIR}
