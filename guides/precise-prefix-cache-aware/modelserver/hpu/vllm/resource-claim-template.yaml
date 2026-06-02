@@ -9,4 +9,4 @@ spec:
         - name: intel-gaudi-claim-template
           exactly:
             deviceClassName: gaudi.intel.com
-            count: 1
+            count: 2

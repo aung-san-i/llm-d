@@ -6,8 +6,13 @@ spec:
   replicas: 1
   template:
     spec:
+      imagePullSecrets:
+        - name: amr-caas-registry
+      nodeSelector:
+        kubernetes.io/hostname: sc09dell05-g3
       containers:
         - name: modelserver
+          image: amr-registry.caas.intel.com/taas/llm-d/gaudi_rhel9.6_dockerfile.rhel.hpu:75-18453e3
           command: ["vllm", "serve"]
           # CI-sized default for Gaudi. HPU typically runs with block-size=128;
           # precise prefix cache scoring requires scorer.tokenProcessorConfig.blockSize
@@ -15,14 +20,17 @@ spec:
           # if you change --block-size here, and update `modelName` in
           # scheduler/precise-prefix-cache-aware.values.yaml to Qwen/Qwen3-8B.
           args:
-            - "Qwen/Qwen3-8B"
+            - "Qwen/Qwen3-32B"
             - "--block-size=128"
-            - "--max-num-seqs=256"
-            - "--max-model-len=2048"
-            - "--max-num-batched-token=16000"
+            - "--no-enable-prefix-caching"
+            - "--tensor-parallel-size=2"
+            - "--max-model-len=91964"
+            - "--gpu-memory-utilization=0.65"
             - "--disable-access-log-for-endpoints=/health,/metrics,/v1/models"
             - "--kv-events-config"
-            - '{"enable_kv_cache_events":true,"publisher":"zmq","endpoint":"$(KV_EVENTS_ENDPOINT)","topic":"kv@$(POD_IP):$(POD_PORT)@Qwen/Qwen3-8B"}'
+            - '{"enable_kv_cache_events":true,"publisher":"zmq","endpoint":"$(KV_EVENTS_ENDPOINT)","topic":"kv@$(POD_IP):$(POD_PORT)@Qwen/Qwen3-32B"}'
+            #- "--kv-transfer-config"
+            #- '{"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"cpu_bytes_to_use":107374182400,"block_size":128,"eviction_policy":"lru"}}'
             # Uncomment for distributed tracing
             # - "--otlp-traces-endpoint=http://otel-collector:4317"
             # - "--collect-detailed-traces=all"
@@ -52,14 +60,35 @@ spec:
               value: "true"
             - name: DO_NOT_TRACK
               value: "1"
+            - name: VLLM_ALLOW_LONG_MAX_MODEL_LEN
+              value: "1"
+            - name: HTTP_PROXY
+              value: "http://proxy-dmz.intel.com:911"
+            - name: HTTPS_PROXY
+              value: "http://proxy-dmz.intel.com:911"
+            - name: NO_PROXY
+              value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
+            - name: http_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: https_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: no_proxy
+              value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
+            - name: HF_HOME
+              value: /models/huggingface
+            - name: TRANSFORMERS_CACHE
+              value: /models/huggingface/hub
           resources:
             claims:
               - name: precise-prefix-cache-aware-gaudi-claim
+          
           volumeMounts:
             # Triton/Inductor caches at /.triton, not writable under
             # restricted SecurityContexts (e.g. OpenShift).
             - mountPath: /.triton
               name: triton-cache
+            - name: pytorch-models
+              mountPath: /models
           startupProbe:
             initialDelaySeconds: 15
             periodSeconds: 30
@@ -79,3 +108,7 @@ spec:
       volumes:
         - name: triton-cache
           emptyDir: {}
+        - name: pytorch-models
+          hostPath:
+            path: /software/data/pytorch
+            type: Directory

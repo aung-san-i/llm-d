@@ -26,6 +26,18 @@ spec:
                 secretKeyRef:
                   name: llm-d-hf-token
                   key: HF_TOKEN
+            - name: HTTP_PROXY
+              value: "http://proxy-dmz.intel.com:911"
+            - name: HTTPS_PROXY
+              value: "http://proxy-dmz.intel.com:911"
+            - name: NO_PROXY
+              value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
+            - name: http_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: https_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: no_proxy
+              value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
           volumeMounts:
             - mountPath: /tokenizers
               name: tokenizers

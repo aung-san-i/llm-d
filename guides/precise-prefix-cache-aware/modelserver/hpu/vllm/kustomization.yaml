@@ -15,7 +15,7 @@ images:
 labels:
   - pairs:
       llm-d.ai/guide: precise-prefix-cache-aware
-      llm-d.ai/model: Qwen3-8B
+      llm-d.ai/model: Qwen3-32B
       llm-d.ai/accelerator-variant: hpu
       llm-d.ai/accelerator-vendor: intel
     includeSelectors: true

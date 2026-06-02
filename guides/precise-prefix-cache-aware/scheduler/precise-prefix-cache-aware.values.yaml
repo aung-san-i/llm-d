@@ -47,6 +47,36 @@ inferenceExtension:
         secretKeyRef:
           name: llm-d-hf-token
           key: HF_TOKEN
+    - name: HTTP_PROXY
+      value: "http://proxy-dmz.intel.com:911"
+    - name: HTTPS_PROXY
+      value: "http://proxy-dmz.intel.com:911"
+    - name: NO_PROXY
+      value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
+    - name: http_proxy
+      value: "http://proxy-dmz.intel.com:911"
+    - name: https_proxy
+      value: "http://proxy-dmz.intel.com:911"
+    - name: no_proxy
+      value: ".cluster.local,10.0.0.0/8,192.169.0.0/16,localhost,127.0.0.1"
+
+  # Override Envoy sidecar defaults: lower log-level from trace to warn
+  # and cap concurrency to reduce file descriptor usage.
+  sidecar:
+    args:
+      - "--service-node"
+      - "envoy-sidecar"
+      - "--log-level"
+      - "warn"
+      - "--concurrency"
+      - "2"
+      - "--cpuset-threads"
+      - "--drain-strategy"
+      - "immediate"
+      - "--drain-time-s"
+      - "60"
+      - "-c"
+      - "/etc/envoy/envoy.yaml"
 
   # The UDS tokenizer sidecar (container, volumes, and /tmp/tokenizer
   # mount on the EPP container) is intentionally NOT declared here. The
@@ -78,7 +108,7 @@ inferenceExtension:
         - type: precise-prefix-cache-scorer
           parameters:
             tokenProcessorConfig:
-              blockSize: 64           # must match vLLM --block-size
+              blockSize: 128           # must match vLLM --block-size
             speculativeIndexing: true
             indexerConfig:
               tokenizersPoolConfig:
@@ -114,3 +144,4 @@ inferencePool:
   modelServers:
     matchLabels:
       llm-d.ai/guide: "precise-prefix-cache-aware"
+
