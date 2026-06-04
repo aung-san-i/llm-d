@@ -18,7 +18,7 @@ ARG PYPI_INDEX_URL="https://pypi.org/simple/"
 ARG HABANA_RPM_REPO_PATH="rhel/9/${OS_VERSION}"
 # SHA-256 checksum of the GPG public key (verified before rpm --import)
 ARG HABANA_GPG_CHECKSUM
-ARG VLLM_GAUDI_COMMIT="95441ad639a39c7e0a423cc799e7c5dc7e8ebf61"
+ARG VLLM_GAUDI_COMMIT
 ARG Pr_Number
 ARG VLLM_PROJECT_COMMIT="v0.21.0"
 
