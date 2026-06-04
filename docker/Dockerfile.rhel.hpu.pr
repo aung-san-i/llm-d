@@ -228,22 +228,14 @@ RUN --mount=type=tmpfs,target=/tmp \
     pip install --no-cache-dir -r "$TMP_REQ_FILE" && rm -f "$TMP_REQ_FILE" && \
     VLLM_TARGET_DEVICE=empty pip install --no-cache-dir --no-build-isolation . && \
     cd $VLLM_PATH2 && \
-    if [ -n "${VLLM_GAUDI_COMMIT}" ]; then \
+    if [ -n "${VLLM_GAUDI_COMMIT}" ] && [ -n "${Pr_Number}" ]; then \
+        echo "ERROR: Specify either VLLM_GAUDI_COMMIT or Pr_Number, not both." && exit 1; \
+    elif [ -n "${VLLM_GAUDI_COMMIT}" ]; then \
         git checkout "${VLLM_GAUDI_COMMIT}" || \
-        { \
-            if [ -n "${Pr_Number}" ]; then \
-                echo "Fetching vLLM-Gaudi PR ref ${Pr_Number} for commit ${VLLM_GAUDI_COMMIT}" && \
-                git fetch origin "refs/pull/${Pr_Number}/head:refs/remotes/origin/pr/${Pr_Number}"; \
-            else \
-                echo "Commit ${VLLM_GAUDI_COMMIT} was not found in cloned refs; fetching GitHub PR heads" && \
-                git fetch origin '+refs/pull/*/head:refs/remotes/origin/pr/*'; \
-            fi && \
-            git checkout "${VLLM_GAUDI_COMMIT}" || \
-            ( echo "ERROR: vLLM-Gaudi checkout to ${VLLM_GAUDI_COMMIT} failed." && exit 1 ); \
-        }; \
+        ( echo "ERROR: vLLM-Gaudi checkout to ${VLLM_GAUDI_COMMIT} failed." && exit 1 ); \
     elif [ -n "${Pr_Number}" ]; then \
-        echo "Fetching vLLM-Gaudi PR ref ${Pr_Number}" && \
-        git fetch origin "refs/pull/${Pr_Number}/head" && \
+        echo "Fetching vLLM-Gaudi PR merge ref ${Pr_Number}" && \
+        git fetch origin "refs/pull/${Pr_Number}/merge" && \
         git checkout FETCH_HEAD || \
         ( echo "ERROR: vLLM-Gaudi checkout to PR ${Pr_Number} failed." && exit 1 ); \
     else \
@@ -410,22 +402,14 @@ RUN --mount=type=tmpfs,target=/tmp \
     git clone $VLLM_GAUDI_REPO ${VLLM_GAUDI_SRC_DIR} && \
     cd ${VLLM_GAUDI_SRC_DIR} && \
     git checkout ${VLLM_GAUDI_BRANCH} && \
-    if [ -n "${VLLM_GAUDI_COMMIT}" ]; then \
+    if [ -n "${VLLM_GAUDI_COMMIT}" ] && [ -n "${Pr_Number}" ]; then \
+        echo "ERROR: Specify either VLLM_GAUDI_COMMIT or Pr_Number, not both." && exit 1; \
+    elif [ -n "${VLLM_GAUDI_COMMIT}" ]; then \
         git checkout "${VLLM_GAUDI_COMMIT}" || \
-        { \
-            if [ -n "${Pr_Number}" ]; then \
-                echo "Fetching vLLM-Gaudi PR ref ${Pr_Number} for commit ${VLLM_GAUDI_COMMIT}" && \
-                git fetch origin "refs/pull/${Pr_Number}/head:refs/remotes/origin/pr/${Pr_Number}"; \
-            else \
-                echo "Commit ${VLLM_GAUDI_COMMIT} was not found in cloned refs; fetching GitHub PR heads" && \
-                git fetch origin '+refs/pull/*/head:refs/remotes/origin/pr/*'; \
-            fi && \
-            git checkout "${VLLM_GAUDI_COMMIT}" || \
-            ( echo "ERROR: vLLM-Gaudi checkout to ${VLLM_GAUDI_COMMIT} failed." && exit 1 ); \
-        }; \
+        ( echo "ERROR: vLLM-Gaudi checkout to ${VLLM_GAUDI_COMMIT} failed." && exit 1 ); \
     elif [ -n "${Pr_Number}" ]; then \
-        echo "Fetching vLLM-Gaudi PR ref ${Pr_Number}" && \
-        git fetch origin "refs/pull/${Pr_Number}/head" && \
+        echo "Fetching vLLM-Gaudi PR merge ref ${Pr_Number}" && \
+        git fetch origin "refs/pull/${Pr_Number}/merge" && \
         git checkout FETCH_HEAD || \
         ( echo "ERROR: vLLM-Gaudi checkout to PR ${Pr_Number} failed." && exit 1 ); \
     else \
