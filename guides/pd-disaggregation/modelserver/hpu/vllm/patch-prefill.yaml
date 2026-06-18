@@ -12,7 +12,8 @@ spec:
       imagePullSecrets:
         - name: amr-caas-registry
       nodeSelector:
-        kubernetes.io/hostname: sc09super18-g3p
+        # kubernetes.io/hostname: sc09super18-g3p
+        ci_node: ci_g3
       containers:
         - name: modelserver
           #image: amr-registry.caas.intel.com/taas/llm-d/gaudi_rhel9.6_v0.21.0_dockerfile.rhel.hpu:94-ef5724e
