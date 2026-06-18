@@ -9,7 +9,8 @@ spec:
       imagePullSecrets:
         - name: amr-caas-registry
       nodeSelector:
-        kubernetes.io/hostname: sc09dell06-nvd
+        # kubernetes.io/hostname: sc09dell06-nvd
+        ci_node: ci_a100
       containers:
         - name: modelserver
           imagePullPolicy: IfNotPresent
