@@ -32,6 +32,16 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
+              ulimit -l unlimited
+              for libcuda_path in /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/lib64/libcuda.so.1 /usr/local/nvidia/lib64/libcuda.so.1 /usr/local/cuda/compat/libcuda.so.1; do
+                if [ -e "$libcuda_path" ]; then
+                  ln -sf "$libcuda_path" /usr/local/lib/libcuda.so.1
+                  break
+                fi
+              done
+              export LIBRARY_PATH="/usr/local/lib:/usr/lib/x86_64-linux-gnu:${LIBRARY_PATH:-}"
+              export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH:-}"
+              ldconfig
               VLLM_NIXL_DEVICE_TO_DEVICE=1 vllm serve meta-llama/Llama-3.3-70B-Instruct --port 8200  \
                 --tensor-parallel-size 2 --served-model-name meta-llama/Llama-3.3-70B-Instruct \
                 --gpu-memory-utilization 0.95 --long_prefill_token_threshold 8192 \
