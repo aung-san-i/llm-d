@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decode
+  labels:
+    kueue.x-k8s.io/queue-name: llm-d-heterogeneous-pd-queue
+spec:
+  replicas: 1
+  template:
+    spec:
+      imagePullSecrets:
+        - name: amr-caas-registry
+      nodeSelector:
+        # kubernetes.io/hostname: sc09dell06-nvd
+        ci_node: ci_a100
+      containers:
+        - name: modelserver
+          imagePullPolicy: IfNotPresent
+          #image: amr-registry.caas.intel.com/taas/llm-d/main_dockerfile.cuda:eadced
+          #image: amr-registry.caas.intel.com/taas/llm-d/llmd_v0.7.0_nixl:latest
+          image: amr-idc-registry.infra-host.com/asv-content/dynamo0.9-kvbm-vllm0.15.1-nixl0.9-ucx0.19-nvidia-fp8-perf-log-02092026:cuda12.4-torch2.9-devel
+          securityContext:
+            runAsUser: 0
+            capabilities:
+              add: 
+                - "IPC_LOCK"
+                - "SYS_RESOURCE"
+                - "SYS_ADMIN"
+                - "SYS_RAWIO"
+                - "IPC_LOCK"
+                - "NET_RAW"
+                - "NET_ADMIN" 
+                - "ALL"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              ulimit -l unlimited
+              for libcuda_path in /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/lib64/libcuda.so.1 /usr/local/nvidia/lib64/libcuda.so.1 /usr/local/cuda/compat/libcuda.so.1; do
+                if [ -e "$libcuda_path" ]; then
+                  ln -sf "$libcuda_path" /usr/local/lib/libcuda.so.1
+                  break
+                fi
+              done
+              export LIBRARY_PATH="/usr/local/lib:/usr/lib/x86_64-linux-gnu:${LIBRARY_PATH:-}"
+              export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH:-}"
+              ldconfig
+              VLLM_NIXL_DEVICE_TO_DEVICE=1 vllm serve meta-llama/Llama-3.3-70B-Instruct --port 8200  \
+                --tensor-parallel-size 2 --served-model-name meta-llama/Llama-3.3-70B-Instruct \
+                --gpu-memory-utilization 0.95 --long_prefill_token_threshold 8192 \
+                --max-num-batched-tokens 65536  \
+                --max-num-seqs 128 --no-enable-prefix-caching \
+                --kv-transfer-config '{"kv_connector":"NixlConnector", "kv_role":"kv_both", "kv_buffer_device":"cuda", "kv_parallel_size":"2", "kv_connector_extra_config":{"enforce_handshake_compat": false}, "enable_permute_local_kv":"True"}'
+          env:
+            - name: OMPI_MCA_btl_vader_single_copy_mechanism
+              value: "none"
+            - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+              value: "5600"
+            - name: VLLM_EXPONENTIAL_BUCKETING
+              value: "false"
+            - name: UCX_TLS
+              value: "cuda_copy,rc,ib"
+            - name: UCX_MEMTYPE_CACHE
+              value: "0"
+            - name: VLLM_KV_CACHE_LAYOUT
+              value: "HND"
+            - name: UCX_IB_ROCE_REACHABILITY_MODE
+              value: "all"
+            - name: http_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: https_proxy
+              value: "http://proxy-dmz.intel.com:912"
+            - name: no_proxy
+              value: "127.0.0.1,localhost,.svc,.cluster.local"
+            - name: HF_HOME
+              value: /models/huggingface
+            - name: TRANSFORMERS_CACHE
+              value: /models/huggingface/hub
+            - name: VLLM_LOGGING_LEVEL
+              value: "INFO"
+            - name: NUM_GPUS
+              value: "2"
+          resources:
+            claims:
+              - name: hpu-decode-claim
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: shm
+            - mountPath: /.cache
+              name: torch-compile-cache
+            - name: pytorch-models
+              mountPath: /models
+          startupProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 20
+          readinessProbe:
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+      resourceClaims:
+        - name: hpu-decode-claim
+          #resourceClaimTemplateName: nvidia-2-gpu-1-rdma-vf
+          resourceClaimTemplateName: nvidia-2-gpu-specific-1-rdma-vf
+          #resourceClaimTemplateName: nvidia-gpu-rdma-template
+      volumes:
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi
+        - name: torch-compile-cache
+          emptyDir: {}
+        - name: pytorch-models
+          hostPath:
+            path: /software/data/pytorch
+            type: Directory
