@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefill
+  labels:
+    kueue.x-k8s.io/queue-name: llm-d-heterogeneous-pd-queue
+spec:
+  replicas: 2
+  template:
+    spec:
+      resourceClaims:
+      - name: hpu-rdma-resource
+        resourceClaimTemplateName: gaudi-rdma-hpu-template
+      imagePullSecrets:
+        - name: amr-caas-registry
+      nodeSelector:
+        # kubernetes.io/hostname: sc09super18-g3p
+        ci_node: ci_g3
+      containers:
+        - name: modelserver
+          #image: amr-registry.caas.intel.com/taas/llm-d/gaudi_rhel9.6_v0.21.0_dockerfile.rhel.hpu:94-ef5724e
+          #image: amr-registry.caas.intel.com/taas/llm-d/gaudi_rhel9.6_v0.21.0_dockerfile.rhel.hpu:93-ef5724e
+          image: amr-registry.caas.intel.com/taas/llm-d/gaudi_rhel9.6_v0.21.0_dockerfile.rhel.hpu:95-ef5724e
+          #image: amr-idc-registry.infra-host.com/asv-content/dynamo0.9-kvbm-nixl0.9-ucx0.19-vllm0.15-fp8-gaudi-2.9.1-2404:1.23.0-latest-02092026
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            capabilities:
+              add: 
+              - "IPC_LOCK"
+              - "SYS_RESOURCE"
+              - "SYS_ADMIN"
+              - "SYS_RAWIO"
+              - "IPC_LOCK"
+              - "NET_RAW"
+              - "NET_ADMIN" 
+              - "ALL" 
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              ulimit -l unlimited
+              VLLM_NIXL_DEVICE_TO_DEVICE=1 vllm serve meta-llama/Llama-3.3-70B-Instruct --port 8000 \
+                --tensor-parallel-size 2 --served-model-name meta-llama/Llama-3.3-70B-Instruct \
+                --gpu-memory-utilization 0.9 \
+                --max-num-batched-tokens 81920 --max-model-len 15000 \
+                --max-num-seqs 4 --no-enable-prefix-caching \
+                --kv-transfer-config '{"kv_connector":"NixlConnector", "kv_role":"kv_both", "kv_buffer_device":"hpu", "enable_permute_local_kv":"True", "kv_connector_extra_config":{"agreed_block_size": "16", "enforce_handshake_compat": false}}'
+          env:
+            - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+              value: "5600"
+            - name: PT_HPU_ENABLE_LAZY_COLLECTIVES
+              value: "true"
+            - name: VLLM_HPU_HETERO_KV_LAYOUT
+              value: "true"
+            - name: VLLM_KV_CACHE_LAYOUT
+              value: "NHD"
+            - name: UCX_TLS
+              value: "gaudi_gdr,rc,ud,ib"
+            - name: UCX_IB_ROCE_REACHABILITY_MODE
+              value: "all"
+            - name: UCX_MEMTYPE_CACHE
+              value: "0"
+            - name: UCX_IB_ADDR_TYPE
+              value: "ib_global"
+            - name: VLLM_SKIP_WARMUP
+              value: "true"
+            - name: FUSER_ENABLE_LOW_UTILIZATION
+              value: "true"
+            - name: VLLM_DELAYED_SAMPLING
+              value: "true"
+            - name: VLLM_ALLOW_LONG_MAX_MODEL_LEN
+              value: "1"
+            - name: PT_HPU_ENABLE_LAZY_COLLECTIVES
+              value: "true"
+            - name: EXPERIMENTAL_WEIGHT_SHARING
+              value: "0"
+            - name: VLLM_EXPONENTIAL_BUCKETING
+              value: "false"
+            - name: ENABLE_FUSION_BEFORE_NORM
+              value: "true"
+            - name: VLLM_USE_V1
+              value: "1"
+            - name: VLLM_PROMPT_BS_BUCKET_MIN
+              value: "1"
+            - name: VLLM_PROMPT_BS_BUCKET_STEP
+              value: "1"
+            - name: VLLM_PROMPT_BS_BUCKET_MAX
+              value: "4"
+            - name: VLLM_PROMPT_SEQ_BUCKET_MIN
+              value: "6300"
+            - name: VLLM_PROMPT_SEQ_BUCKET_STEP
+              value: "128"
+            - name: VLLM_PROMPT_SEQ_BUCKET_MAX
+              value: "9000"
+            - name: http_proxy
+              value: "http://proxy-dmz.intel.com:911"
+            - name: https_proxy
+              value: "http://proxy-dmz.intel.com:912"
+            - name: no_proxy
+              value: "127.0.0.1,localhost,.svc,.cluster.local"
+            - name: HF_HOME
+              value: /models/huggingface
+            - name: TRANSFORMERS_CACHE
+              value: /models/huggingface/hub
+            - name: VLLM_LOGGING_LEVEL
+              value: "INFO"
+            - name: NUM_GPUS
+              value: "2"
+            - name: HABANA_LOGS 
+              value: "/tmp/hlog"
+          resources:
+            claims:
+              - name: hpu-rdma-resource
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: shm
+            - mountPath: /.cache
+              name: torch-compile-cache
+            - name: pytorch-models
+              mountPath: /models
+          startupProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 20
+          readinessProbe:
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi
+        - name: torch-compile-cache
+          emptyDir: {}
+        - name: pytorch-models
+          hostPath:
+            path: /software/data/pytorch
+            type: Directory
