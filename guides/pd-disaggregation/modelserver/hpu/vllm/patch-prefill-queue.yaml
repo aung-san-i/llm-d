@@ -112,6 +112,10 @@ spec:
               value: "2"
             - name: HABANA_LOGS 
               value: "/tmp/hlog"
+            - name: VLLM_HPU_NIXL_STAGING_SLOTS
+              value: "2048"
+            - name: VLLM_HPU_NIXL_JOINT_KV
+              value: "true"
           resources:
             claims:
               - name: hpu-rdma-resource
